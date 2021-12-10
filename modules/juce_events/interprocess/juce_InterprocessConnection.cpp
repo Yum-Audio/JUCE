@@ -71,10 +71,11 @@ class InterprocessConnection::SafeAction : public SafeActionImpl
 };
 
 //==============================================================================
-InterprocessConnection::InterprocessConnection (bool callbacksOnMessageThread, uint32 magicMessageHeaderNumber)
+InterprocessConnection::InterprocessConnection (bool callbacksOnMessageThread, int threadPrio, uint32 magicMessageHeaderNumber)
     : useMessageThread (callbacksOnMessageThread),
       magicMessageHeader (magicMessageHeaderNumber),
-      safeAction (std::make_shared<SafeAction> (*this))
+      safeAction (std::make_shared<SafeAction> (*this)),
+      threadPriority (threadPrio)
 {
     thread.reset (new ConnectionThread (*this));
 }
@@ -228,7 +229,7 @@ void InterprocessConnection::initialise()
     safeAction->setSafe (true);
     threadIsRunning = true;
     connectionMadeInt();
-    thread->startThread();
+    thread->startThread(threadPriority);
 }
 
 void InterprocessConnection::initialiseWithSocket (std::unique_ptr<StreamingSocket> newSocket)

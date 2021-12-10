@@ -71,6 +71,7 @@ public:
                                             use matching values or they won't recognise each other.
     */
     InterprocessConnection (bool callbacksOnMessageThread = true,
+                            int threadPrio = 5,
                             uint32 magicMessageHeaderNumber = 0xf2b49e2c);
 
     /** Destructor. */
@@ -220,6 +221,8 @@ private:
     void runThread();
     int writeData (void*, int);
 
+    int threadPriority;
+    
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (InterprocessConnection)
 };
 
