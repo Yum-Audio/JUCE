@@ -146,7 +146,7 @@ public:
     template <typename CharPointerType>
     static double readDoubleValue (CharPointerType& text) noexcept
     {
-        constexpr auto inf = std::numeric_limits<double>::infinity();
+        constexpr auto infinity = std::numeric_limits<double>::infinity();
 
         bool isNegative = false;
        #if ! JUCE_MINGW
@@ -155,12 +155,12 @@ public:
         char buffer[(size_t) bufferSize] = {};
         char* writePtr = &(buffer[0]);
        #endif
-
+ 
         const auto endOfWhitspace = text.findEndOfWhitespace();
         text = endOfWhitspace;
-
+ 
         auto c = *text;
-
+ 
         switch (c)
         {
             case '-':
@@ -175,49 +175,49 @@ public:
             default:
                 break;
         }
-
+ 
         switch (c)
         {
             case 'n':
             case 'N':
             {
-                if ((text[1] == 'a' || text[1] == 'A') && (text[2] == 'n' || text[2] == 'N'))
+                if ((text[1] == 'a' || text[1] == 'A') && (text[2] == 'n' || text[2]  == 'N'))
                 {
                     text += 3;
                     return std::numeric_limits<double>::quiet_NaN();
                 }
-
+ 
                 text = endOfWhitspace;
                 return 0.0;
             }
-
+ 
             case 'i':
             case 'I':
             {
-                if ((text[1] == 'n' || text[1] == 'N') && (text[2] == 'f' || text[2] == 'F'))
+                if ((text[1] == 'n' || text[1] == 'N') && (text[2] == 'f' || text[2]  == 'F'))
                 {
                     text += 3;
-                    return isNegative ? -inf : inf;
+                    return isNegative ? -infinity : infinity;
                 }
-
+ 
                 text = endOfWhitspace;
                 return 0.0;
             }
-
+ 
             default:
                 break;
         }
-
+ 
        #if JUCE_MINGW
-        // MinGW does not have access to the locale functions required for strtold, so we parse the doubles
-        // ourselves. There are some edge cases where the least significant digit will be wrong!
+        // MinGW does not have access to the locale functions required for strtold,  so we parse the doubles
+        // ourselves. There are some edge cases where the least significant digit  will be wrong!
         double result[3] = { 0 }, accumulator[2] = { 0 };
         int exponentAdjustment[2] = { 0 }, exponentAccumulator[2] = { -1, -1 };
         int exponent = 0, decPointIndex = 0, digit = 0;
         int lastDigit = 0, numSignificantDigits = 0;
         bool digitsFound = false;
         constexpr const int maxSignificantDigits = 17 + 1;
-
+ 
         for (;;)
         {
             if (text.isDigit())
@@ -225,25 +225,25 @@ public:
                 lastDigit = digit;
                 digit = (int) text.getAndAdvance() - '0';
                 digitsFound = true;
-
+ 
                 if (decPointIndex != 0)
                     exponentAdjustment[1]++;
-
+ 
                 if (numSignificantDigits == 0 && digit == 0)
                     continue;
-
+ 
                 if (++numSignificantDigits > maxSignificantDigits)
                 {
                     if (digit > 5)
                         ++accumulator [decPointIndex];
                     else if (digit == 5 && (lastDigit & 1) != 0)
                         ++accumulator [decPointIndex];
-
+ 
                     if (decPointIndex > 0)
                         exponentAdjustment[1]--;
                     else
                         exponentAdjustment[0]++;
-
+ 
                     while (text.isDigit())
                     {
                         ++text;
@@ -253,16 +253,16 @@ public:
                 }
                 else
                 {
-                    const auto maxAccumulatorValue = (double) ((std::numeric_limits<unsigned int>::max() - 9) / 10);
+                    const auto maxAccumulatorValue = (double)  ((std::numeric_limits<unsigned int>::max() - 9) / 10);
                     if (accumulator [decPointIndex] > maxAccumulatorValue)
                     {
-                        result [decPointIndex] = mulexp10 (result [decPointIndex], exponentAccumulator [decPointIndex])
+                        result [decPointIndex] = mulexp10 (result [decPointIndex],  exponentAccumulator [decPointIndex])
                                                  + accumulator [decPointIndex];
                         accumulator [decPointIndex] = 0;
                         exponentAccumulator [decPointIndex] = 0;
                     }
-
-                    accumulator [decPointIndex] = accumulator[decPointIndex] * 10 + digit;
+ 
+                    accumulator [decPointIndex] = accumulator[decPointIndex] * 10 +  digit;
                     exponentAccumulator [decPointIndex]++;
                 }
             }
@@ -270,7 +270,7 @@ public:
             {
                 ++text;
                 decPointIndex = 1;
-
+ 
                 if (numSignificantDigits > maxSignificantDigits)
                 {
                     while (text.isDigit())
@@ -283,47 +283,47 @@ public:
                 break;
             }
         }
-
+ 
         result[0] = mulexp10 (result[0], exponentAccumulator[0]) + accumulator[0];
-
+ 
         if (decPointIndex != 0)
             result[1] = mulexp10 (result[1], exponentAccumulator[1]) + accumulator[1];
-
+ 
         c = *text;
         if ((c == 'e' || c == 'E') && digitsFound)
         {
             auto negativeExponent = false;
-
+ 
             switch (*++text)
             {
                 case '-':   negativeExponent = true; JUCE_FALLTHROUGH
                 case '+':   ++text;
             }
-
+ 
             while (text.isDigit())
                 exponent = (exponent * 10) + ((int) text.getAndAdvance() - '0');
-
+ 
             if (negativeExponent)
                 exponent = -exponent;
         }
-
+ 
         auto r = mulexp10 (result[0], exponent + exponentAdjustment[0]);
         if (decPointIndex != 0)
             r += mulexp10 (result[1], exponent - exponentAdjustment[1]);
-
+ 
         return isNegative ? -r : r;
-
+ 
        #else   // ! JUCE_MINGW
-
+ 
         int numSigFigs = 0, extraExponent = 0;
         bool decimalPointFound = false, leadingZeros = false;
-
+ 
         for (;;)
         {
             if (text.isDigit())
             {
                 auto digit = (int) text.getAndAdvance() - '0';
-
+ 
                 if (decimalPointFound)
                 {
                     if (numSigFigs >= maxSignificantDigits)
@@ -336,14 +336,14 @@ public:
                         ++extraExponent;
                         continue;
                     }
-
+ 
                     if (numSigFigs == 0 && digit == 0)
                     {
                         leadingZeros = true;
                         continue;
                     }
                 }
-
+ 
                 *writePtr++ = (char) ('0' + (char) digit);
                 numSigFigs++;
             }
@@ -358,17 +358,17 @@ public:
                 break;
             }
         }
-
+ 
         if ((! leadingZeros) && (numSigFigs == 0))
         {
             text = endOfWhitspace;
             return 0.0;
         }
-
+ 
         auto writeExponentDigits = [] (int exponent, char* destination)
         {
             auto exponentDivisor = 100;
-
+ 
             while (exponentDivisor > 1)
             {
                 auto digit = exponent / exponentDivisor;
@@ -376,18 +376,18 @@ public:
                 exponent -= digit * exponentDivisor;
                 exponentDivisor /= 10;
             }
-
+ 
             *destination++ = (char) ('0' + (char) exponent);
         };
-
+ 
         c = *text;
-
+ 
         if (c == 'e' || c == 'E')
         {
             const auto startOfExponent = text;
             *writePtr++ = 'e';
             bool parsedExponentIsPositive = true;
-
+ 
             switch (*++text)
             {
                 case '-':
@@ -399,36 +399,36 @@ public:
                 default:
                     break;
             }
-
+ 
             int exponent = 0;
             const auto startOfExponentDigits = text;
-
+ 
             while (text.isDigit())
             {
                 auto digit = (int) text.getAndAdvance() - '0';
-
+ 
                 if (digit != 0 || exponent != 0)
                     exponent = (exponent * 10) + digit;
             }
-
+ 
             if (text == startOfExponentDigits)
                 text = startOfExponent;
-
-            exponent = extraExponent + (parsedExponentIsPositive ? exponent : -exponent);
-
+ 
+            exponent = extraExponent + (parsedExponentIsPositive ? exponent :  -exponent);
+ 
             if (exponent < 0)
             {
                 if (exponent < std::numeric_limits<double>::min_exponent10 - 1)
                     return isNegative ? -0.0 : 0.0;
-
+ 
                 *writePtr++ = '-';
                 exponent = -exponent;
             }
             else if (exponent > std::numeric_limits<double>::max_exponent10 + 1)
             {
-                return isNegative ? -inf : inf;
+                return isNegative ? -infinity : infinity;
             }
-
+ 
             writeExponentDigits (exponent, writePtr);
         }
         else if (extraExponent > 0)
@@ -436,7 +436,7 @@ public:
             *writePtr++ = 'e';
             writeExponentDigits (extraExponent, writePtr);
         }
-
+ 
        #if JUCE_WINDOWS
         static _locale_t locale = _create_locale (LC_ALL, "C");
         return _strtod_l (&buffer[0], nullptr, locale);
@@ -448,7 +448,7 @@ public:
         return strtod_l (&buffer[0], nullptr, locale);
         #endif
        #endif
-
+ 
        #endif   // JUCE_MINGW
     }
 
