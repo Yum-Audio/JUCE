@@ -37,6 +37,12 @@ fi
 
 cmake --build . --config "Release" --parallel 8
 
+
+
+if [ $currentos == MinGw ]; then 
+BUILD="$BUILD_DIR/Release/App/Projucer.exe"
+else
 BUILD="$BUILD_DIR/Release/Projucer.app"
+fi
 
 "$BUILD"
