@@ -288,12 +288,13 @@ private:
     {
         if (! result)
         {
-            if (failureMessage.isNotEmpty())
-                failureMessage << " -- ";
+            //if (failureMessage.isNotEmpty())
+            //    failureMessage << " -- ";
 
-            failureMessage << "Expected value" << (compDescription.isEmpty() ? "" : " ")
-                           << compDescription << ": " << valueToCompareTo
-                           << ", Actual value: " << value;
+            //failureMessage << "Expected value" << (compDescription.isEmpty() ? "" : " ")
+            //               << compDescription << ": " << valueToCompareTo
+            //               << ", Actual value: " << value;
+            jassertfalse; //why is this throwing a compiler error on windows...
         }
 
         expect (result, failureMessage);
