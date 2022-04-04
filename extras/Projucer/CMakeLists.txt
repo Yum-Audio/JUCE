@@ -22,7 +22,7 @@ jucer_project_begin(
 
 jucer_project_settings(
   PROJECT_NAME "Projucer"
-  PROJECT_VERSION "6.1.5"
+  PROJECT_VERSION "6.1.6"
   COMPANY_NAME "Raw Material Software Limited"
   COMPANY_COPYRIGHT "Raw Material Software Limited"
   USE_GLOBAL_APPCONFIG_HEADER OFF
