@@ -1231,7 +1231,7 @@ void TextEditor::setText (const String& newText, bool sendTextChangeMessage)
 
         // if you're adding text with line-feeds to a single-line text editor, it
         // ain't gonna look right!
-        jassert (multiline || ! newText.containsAnyOf ("\r\n"));
+        // jassert (multiline || ! newText.containsAnyOf ("\r\n"));
 
         if (cursorWasAtEnd && ! isMultiLine())
             oldCursorPos = getTotalNumChars();
