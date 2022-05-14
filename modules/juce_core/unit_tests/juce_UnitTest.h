@@ -283,8 +283,8 @@ public:
 private:
     //==============================================================================
     template <class ValueType>
-    void expectResultAndPrint (ValueType value, ValueType valueToCompareTo, bool result,
-                               String compDescription, String failureMessage)
+    void expectResultAndPrint (ValueType , ValueType , bool result,
+                               String , String failureMessage)
     {
         if (! result)
         {
