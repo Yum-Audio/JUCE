@@ -63,7 +63,7 @@ void AsyncUpdater::triggerAsyncUpdate()
 {
     // If you're calling this before (or after) the MessageManager is
     // running, then you're not going to get any callbacks!
-    JUCE_ASSERT_MESSAGE_MANAGER_EXISTS
+    // JUCE_ASSERT_MESSAGE_MANAGER_EXISTS
 
     if (activeMessage->shouldDeliver.compareAndSetBool (1, 0))
         if (! activeMessage->post())
