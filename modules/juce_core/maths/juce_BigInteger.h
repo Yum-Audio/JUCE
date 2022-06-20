@@ -319,6 +319,8 @@ public:
     */
     void loadFromMemoryBlock (const MemoryBlock& data);
 
+    uint32* ensureSize (size_t);
+
 private:
     //==============================================================================
     enum { numPreallocatedInts = 4 };
@@ -329,7 +331,6 @@ private:
     bool negative = false;
 
     uint32* getValues() const noexcept;
-    uint32* ensureSize (size_t);
     void shiftLeft (int bits, int startBit);
     void shiftRight (int bits, int startBit);
 
