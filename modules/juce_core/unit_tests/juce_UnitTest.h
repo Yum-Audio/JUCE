@@ -283,18 +283,21 @@ public:
 private:
     //==============================================================================
     template <class ValueType>
-    void expectResultAndPrint (ValueType , ValueType , bool result,
-                               String , String failureMessage)
+    void expectResultAndPrint (ValueType value, ValueType valueToCompareTo, bool result,
+                               String compDescription, String failureMessage)
     {
         if (! result)
         {
-            //if (failureMessage.isNotEmpty())
-            //    failureMessage << " -- ";
+#if JUCE_MAC
+            if (failureMessage.isNotEmpty())
+                failureMessage << " -- ";
 
-            //failureMessage << "Expected value" << (compDescription.isEmpty() ? "" : " ")
-            //               << compDescription << ": " << valueToCompareTo
-            //               << ", Actual value: " << value;
-            jassertfalse; //why is this throwing a compiler error on windows...
+            failureMessage << "Expected value" << (compDescription.isEmpty() ? "" : " ")
+                           << compDescription << ": " << valueToCompareTo
+                           << ", Actual value: " << value;
+            //why is this throwing a compiler error on windows...
+            
+#endif
         }
 
         expect (result, failureMessage);
