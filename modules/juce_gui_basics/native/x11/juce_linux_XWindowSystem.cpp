@@ -2,15 +2,15 @@
   ==============================================================================
 
    This file is part of the JUCE library.
-   Copyright (c) 2020 - Raw Material Software Limited
+   Copyright (c) 2022 - Raw Material Software Limited
 
    JUCE is an open source library subject to commercial or open-source
    licensing.
 
-   By using JUCE, you agree to the terms of both the JUCE 6 End-User License
-   Agreement and JUCE Privacy Policy (both effective as of the 16th June 2020).
+   By using JUCE, you agree to the terms of both the JUCE 7 End-User License
+   Agreement and JUCE Privacy Policy.
 
-   End User License Agreement: www.juce.com/juce-6-licence
+   End User License Agreement: www.juce.com/juce-7-licence
    Privacy Policy: www.juce.com/juce-privacy-policy
 
    Or: You may also use this code under the terms of the GPL v3 (see
@@ -154,7 +154,7 @@ String XWindowSystemUtilities::Atoms::getName (::Display* display, Atom atom)
     if (atom == None)
         return "None";
 
-    return X11Symbols::getInstance()->xGetAtomName (display, atom);
+    return makeXFreePtr (X11Symbols::getInstance()->xGetAtomName (display, atom)).get();
 }
 
 bool XWindowSystemUtilities::Atoms::isMimeTypeFile (::Display* display, Atom atom)
@@ -413,6 +413,31 @@ namespace Keys
     static bool capsLock = false;
     static char keyStates [32];
     static constexpr int extendedKeyModifier = 0x10000000;
+    static bool modifierKeysAreStale = false;
+
+    static void refreshStaleModifierKeys()
+    {
+        if (modifierKeysAreStale)
+        {
+            XWindowSystem::getInstance()->getNativeRealtimeModifiers();
+            modifierKeysAreStale = false;
+        }
+    }
+
+    // Call this function when only the mouse keys need to be refreshed e.g. when the event
+    // parameter already has information about the keys.
+    static void refreshStaleMouseKeys()
+    {
+        if (modifierKeysAreStale)
+        {
+            const auto oldMods = ModifierKeys::currentModifiers;
+            XWindowSystem::getInstance()->getNativeRealtimeModifiers();
+            ModifierKeys::currentModifiers = oldMods.withoutMouseButtons()
+                                                    .withFlags (ModifierKeys::currentModifiers.withOnlyMouseButtons()
+                                                                                              .getRawFlags());
+            modifierKeysAreStale = false;
+        }
+    }
 }
 
 const int KeyPress::spaceKey              = XK_space         & 0xff;
@@ -566,6 +591,7 @@ enum
  {
      static int trappedErrorCode = 0;
 
+     extern "C" int errorTrapHandler (Display*, XErrorEvent* err);
      extern "C" int errorTrapHandler (Display*, XErrorEvent* err)
      {
          trappedErrorCode = err->error_code;
@@ -968,7 +994,9 @@ public:
     void initialiseBitmapData (Image::BitmapData& bitmap, int x, int y,
                                Image::BitmapData::ReadWriteMode mode) override
     {
-        bitmap.data = imageData + x * pixelStride + y * lineStride;
+        const auto offset = (size_t) (x * pixelStride + y * lineStride);
+        bitmap.data = imageData + offset;
+        bitmap.size = (size_t) (lineStride * height) - offset;
         bitmap.pixelFormat = pixelFormat;
         bitmap.lineStride = lineStride;
         bitmap.pixelStride = pixelStride;
@@ -1744,11 +1772,17 @@ void XWindowSystem::setBounds (::Window windowH, Rectangle<int> newBounds, bool 
             X11Symbols::getInstance()->xSetWMNormalHints (display, windowH, hints.get());
         }
 
-        auto windowBorder = peer->getFrameSize();
+        const auto nativeWindowBorder = [&]() -> BorderSize<int>
+        {
+            if (const auto& frameSize = peer->getFrameSizeIfPresent())
+                return frameSize->multipliedBy (peer->getPlatformScaleFactor());
+
+            return {};
+        }();
 
         X11Symbols::getInstance()->xMoveResizeWindow (display, windowH,
-                                                      newBounds.getX() - windowBorder.getLeft(),
-                                                      newBounds.getY() - windowBorder.getTop(),
+                                                      newBounds.getX() - nativeWindowBorder.getLeft(),
+                                                      newBounds.getY() - nativeWindowBorder.getTop(),
                                                       (unsigned int) newBounds.getWidth(),
                                                       (unsigned int) newBounds.getHeight());
     }
@@ -1774,7 +1808,14 @@ void XWindowSystem::updateConstraints (::Window windowH, ComponentPeer& peer) co
         }
         else if (auto* c = peer.getConstrainer())
         {
-            const auto windowBorder = peer.getFrameSize();
+            const auto windowBorder = [&]() -> BorderSize<int>
+            {
+                if (const auto& frameSize = peer.getFrameSizeIfPresent())
+                    return *frameSize;
+
+                return {};
+            }();
+
             const auto factor       = peer.getPlatformScaleFactor();
             const auto leftAndRight = windowBorder.getLeftAndRight();
             const auto topAndBottom = windowBorder.getTopAndBottom();
@@ -1802,7 +1843,7 @@ bool XWindowSystem::contains (::Window windowH, Point<int> localPos) const
           && child == None;
 }
 
-BorderSize<int> XWindowSystem::getBorderSize (::Window windowH) const
+ComponentPeer::OptionalBorderSize XWindowSystem::getBorderSize (::Window windowH) const
 {
     jassert (windowH != 0);
 
@@ -1824,7 +1865,7 @@ BorderSize<int> XWindowSystem::getBorderSize (::Window windowH) const
                 data += sizeof (unsigned long);
             }
 
-            return { (int) sizes[2], (int) sizes[0], (int) sizes[3], (int) sizes[1] };
+            return ComponentPeer::OptionalBorderSize ({ (int) sizes[2], (int) sizes[0], (int) sizes[3], (int) sizes[1] });
         }
     }
 
@@ -1855,7 +1896,9 @@ Rectangle<int> XWindowSystem::getWindowBounds (::Window windowH, ::Window parent
         }
         else
         {
-            parentScreenPosition = Point<int> (rootX, rootY);
+            // XGetGeometry returns wx and wy relative to the parent window's origin.
+            // XTranslateCoordinates returns rootX and rootY relative to the root window.
+            parentScreenPosition = Point<int> (rootX - wx, rootY - wy);
         }
     }
 
@@ -2429,6 +2472,18 @@ ModifierKeys XWindowSystem::getNativeRealtimeModifiers() const
     }
 
     ModifierKeys::currentModifiers = ModifierKeys::currentModifiers.withoutMouseButtons().withFlags (mouseMods);
+
+    // We are keeping track of the state of modifier keys and mouse buttons with the assumption that
+    // for every mouse down we are going to receive a mouse up etc.
+    //
+    // This assumption is broken when getNativeRealtimeModifiers() is called. If for example we call
+    // this function when the mouse cursor is in another application and the mouse button happens to
+    // be down, then its represented state in currentModifiers may remain down indefinitely, since
+    // we aren't going to receive an event when it's released.
+    //
+    // We mark this state in this variable, and we can restore synchronization when our window
+    // receives an event again.
+    Keys::modifierKeysAreStale = true;
 
     return ModifierKeys::currentModifiers;
 }
@@ -3185,26 +3240,33 @@ void XWindowSystem::destroyXDisplay()
     {
         jassert (display != nullptr);
 
-        XWindowSystemUtilities::ScopedXLock xLock;
+        {
+            XWindowSystemUtilities::ScopedXLock xLock;
 
-        X11Symbols::getInstance()->xDestroyWindow (display, juce_messageWindowHandle);
-        juce_messageWindowHandle = 0;
-        X11Symbols::getInstance()->xSync (display, True);
+            X11Symbols::getInstance()->xDestroyWindow (display, juce_messageWindowHandle);
+            juce_messageWindowHandle = 0;
+            X11Symbols::getInstance()->xSync (display, True);
+        }
 
         LinuxEventLoop::unregisterFdCallback (X11Symbols::getInstance()->xConnectionNumber (display));
 
-        X11Symbols::getInstance()->xCloseDisplay (display);
-        display = nullptr;
-        displayVisuals = nullptr;
+        {
+            XWindowSystemUtilities::ScopedXLock xLock;
+            X11Symbols::getInstance()->xCloseDisplay (display);
+            display = nullptr;
+            displayVisuals = nullptr;
+        }
     }
 }
 
 //==============================================================================
+::Window juce_createKeyProxyWindow (ComponentPeer* peer);
 ::Window juce_createKeyProxyWindow (ComponentPeer* peer)
 {
     return XWindowSystem::getInstance()->createKeyProxy ((::Window) peer->getNativeHandle());
 }
 
+void juce_deleteKeyProxyWindow (::Window keyProxy);
 void juce_deleteKeyProxyWindow (::Window keyProxy)
 {
     XWindowSystem::getInstance()->deleteKeyProxy (keyProxy);
@@ -3285,6 +3347,7 @@ void XWindowSystem::handleWindowMessage (LinuxComponentPeer* peer, XEvent& event
 void XWindowSystem::handleKeyPressEvent (LinuxComponentPeer* peer, XKeyEvent& keyEvent) const
 {
     auto oldMods = ModifierKeys::currentModifiers;
+    Keys::refreshStaleModifierKeys();
 
     char utf8 [64] = { 0 };
     juce_wchar unicodeChar = 0;
@@ -3459,8 +3522,8 @@ void XWindowSystem::handleButtonPressEvent (LinuxComponentPeer* peer, const XBut
     ModifierKeys::currentModifiers = ModifierKeys::currentModifiers.withFlags (buttonModifierFlag);
     peer->toFront (true);
     peer->handleMouseEvent (MouseInputSource::InputSourceType::mouse, getLogicalMousePos (buttonPressEvent, peer->getPlatformScaleFactor()),
-                            ModifierKeys::currentModifiers, MouseInputSource::invalidPressure,
-                            MouseInputSource::invalidOrientation, getEventTime (buttonPressEvent), {});
+                            ModifierKeys::currentModifiers, MouseInputSource::defaultPressure,
+                            MouseInputSource::defaultOrientation, getEventTime (buttonPressEvent), {});
 }
 
 void XWindowSystem::handleButtonPressEvent (LinuxComponentPeer* peer, const XButtonPressedEvent& buttonPressEvent) const
@@ -3509,12 +3572,13 @@ void XWindowSystem::handleButtonReleaseEvent (LinuxComponentPeer* peer, const XB
         dragState.handleExternalDragButtonReleaseEvent();
 
     peer->handleMouseEvent (MouseInputSource::InputSourceType::mouse, getLogicalMousePos (buttonRelEvent, peer->getPlatformScaleFactor()),
-                            ModifierKeys::currentModifiers, MouseInputSource::invalidPressure, MouseInputSource::invalidOrientation, getEventTime (buttonRelEvent));
+                            ModifierKeys::currentModifiers, MouseInputSource::defaultPressure, MouseInputSource::defaultOrientation, getEventTime (buttonRelEvent));
 }
 
 void XWindowSystem::handleMotionNotifyEvent (LinuxComponentPeer* peer, const XPointerMovedEvent& movedEvent) const
 {
     updateKeyModifiers ((int) movedEvent.state);
+    Keys::refreshStaleMouseKeys();
 
     auto& dragState = dragAndDropStateMap[peer];
 
@@ -3522,8 +3586,8 @@ void XWindowSystem::handleMotionNotifyEvent (LinuxComponentPeer* peer, const XPo
         dragState.handleExternalDragMotionNotify();
 
     peer->handleMouseEvent (MouseInputSource::InputSourceType::mouse, getLogicalMousePos (movedEvent, peer->getPlatformScaleFactor()),
-                            ModifierKeys::currentModifiers, MouseInputSource::invalidPressure,
-                            MouseInputSource::invalidOrientation, getEventTime (movedEvent));
+                            ModifierKeys::currentModifiers, MouseInputSource::defaultPressure,
+                            MouseInputSource::defaultOrientation, getEventTime (movedEvent));
 }
 
 void XWindowSystem::handleEnterNotifyEvent (LinuxComponentPeer* peer, const XEnterWindowEvent& enterEvent) const
@@ -3535,8 +3599,8 @@ void XWindowSystem::handleEnterNotifyEvent (LinuxComponentPeer* peer, const XEnt
     {
         updateKeyModifiers ((int) enterEvent.state);
         peer->handleMouseEvent (MouseInputSource::InputSourceType::mouse, getLogicalMousePos (enterEvent, peer->getPlatformScaleFactor()),
-                                ModifierKeys::currentModifiers, MouseInputSource::invalidPressure,
-                                MouseInputSource::invalidOrientation, getEventTime (enterEvent));
+                                ModifierKeys::currentModifiers, MouseInputSource::defaultPressure,
+                                MouseInputSource::defaultOrientation, getEventTime (enterEvent));
     }
 }
 
@@ -3550,8 +3614,8 @@ void XWindowSystem::handleLeaveNotifyEvent (LinuxComponentPeer* peer, const XLea
     {
         updateKeyModifiers ((int) leaveEvent.state);
         peer->handleMouseEvent (MouseInputSource::InputSourceType::mouse, getLogicalMousePos (leaveEvent, peer->getPlatformScaleFactor()),
-                                ModifierKeys::currentModifiers, MouseInputSource::invalidPressure,
-                                MouseInputSource::invalidOrientation, getEventTime (leaveEvent));
+                                ModifierKeys::currentModifiers, MouseInputSource::defaultPressure,
+                                MouseInputSource::defaultOrientation, getEventTime (leaveEvent));
     }
 }
 

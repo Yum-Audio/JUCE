@@ -2,15 +2,15 @@
   ==============================================================================
 
    This file is part of the JUCE library.
-   Copyright (c) 2020 - Raw Material Software Limited
+   Copyright (c) 2022 - Raw Material Software Limited
 
    JUCE is an open source library subject to commercial or open-source
    licensing.
 
-   By using JUCE, you agree to the terms of both the JUCE 6 End-User License
-   Agreement and JUCE Privacy Policy (both effective as of the 16th June 2020).
+   By using JUCE, you agree to the terms of both the JUCE 7 End-User License
+   Agreement and JUCE Privacy Policy.
 
-   End User License Agreement: www.juce.com/juce-6-licence
+   End User License Agreement: www.juce.com/juce-7-licence
    Privacy Policy: www.juce.com/juce-privacy-policy
 
    Or: You may also use this code under the terms of the GPL v3 (see
@@ -168,8 +168,94 @@ const char* const WavAudioFormat::riffInfoWatermarkURL          = "IWMU";
 const char* const WavAudioFormat::riffInfoWrittenBy             = "IWRI";
 const char* const WavAudioFormat::riffInfoYear                  = "YEAR";
 
-const char* const WavAudioFormat::ISRC                 = "ISRC";
-const char* const WavAudioFormat::tracktionLoopInfo    = "tracktion loop info";
+const char* const WavAudioFormat::aswgContentType               = "contentType";
+const char* const WavAudioFormat::aswgProject                   = "project";
+const char* const WavAudioFormat::aswgOriginator                = "originator";
+const char* const WavAudioFormat::aswgOriginatorStudio          = "originatorStudio";
+const char* const WavAudioFormat::aswgNotes                     = "notes";
+const char* const WavAudioFormat::aswgSession                   = "session";
+const char* const WavAudioFormat::aswgState                     = "state";
+const char* const WavAudioFormat::aswgEditor                    = "editor";
+const char* const WavAudioFormat::aswgMixer                     = "mixer";
+const char* const WavAudioFormat::aswgFxChainName               = "fxChainName";
+const char* const WavAudioFormat::aswgChannelConfig             = "channelConfig";
+const char* const WavAudioFormat::aswgAmbisonicFormat           = "ambisonicFormat";
+const char* const WavAudioFormat::aswgAmbisonicChnOrder         = "ambisonicChnOrder";
+const char* const WavAudioFormat::aswgAmbisonicNorm             = "ambisonicNorm";
+const char* const WavAudioFormat::aswgMicType                   = "micType";
+const char* const WavAudioFormat::aswgMicConfig                 = "micConfig";
+const char* const WavAudioFormat::aswgMicDistance               = "micDistance";
+const char* const WavAudioFormat::aswgRecordingLoc              = "recordingLoc";
+const char* const WavAudioFormat::aswgIsDesigned                = "isDesigned";
+const char* const WavAudioFormat::aswgRecEngineer               = "recEngineer";
+const char* const WavAudioFormat::aswgRecStudio                 = "recStudio";
+const char* const WavAudioFormat::aswgImpulseLocation           = "impulseLocation";
+const char* const WavAudioFormat::aswgCategory                  = "category";
+const char* const WavAudioFormat::aswgSubCategory               = "subCategory";
+const char* const WavAudioFormat::aswgCatId                     = "catId";
+const char* const WavAudioFormat::aswgUserCategory              = "userCategory";
+const char* const WavAudioFormat::aswgUserData                  = "userData";
+const char* const WavAudioFormat::aswgVendorCategory            = "vendorCategory";
+const char* const WavAudioFormat::aswgFxName                    = "fxName";
+const char* const WavAudioFormat::aswgLibrary                   = "library";
+const char* const WavAudioFormat::aswgCreatorId                 = "creatorId";
+const char* const WavAudioFormat::aswgSourceId                  = "sourceId";
+const char* const WavAudioFormat::aswgRmsPower                  = "rmsPower";
+const char* const WavAudioFormat::aswgLoudness                  = "loudness";
+const char* const WavAudioFormat::aswgLoudnessRange             = "loudnessRange";
+const char* const WavAudioFormat::aswgMaxPeak                   = "maxPeak";
+const char* const WavAudioFormat::aswgSpecDensity               = "specDensity";
+const char* const WavAudioFormat::aswgZeroCrossRate             = "zeroCrossRate";
+const char* const WavAudioFormat::aswgPapr                      = "papr";
+const char* const WavAudioFormat::aswgText                      = "text";
+const char* const WavAudioFormat::aswgEfforts                   = "efforts";
+const char* const WavAudioFormat::aswgEffortType                = "effortType";
+const char* const WavAudioFormat::aswgProjection                = "projection";
+const char* const WavAudioFormat::aswgLanguage                  = "language";
+const char* const WavAudioFormat::aswgTimingRestriction         = "timingRestriction";
+const char* const WavAudioFormat::aswgCharacterName             = "characterName";
+const char* const WavAudioFormat::aswgCharacterGender           = "characterGender";
+const char* const WavAudioFormat::aswgCharacterAge              = "characterAge";
+const char* const WavAudioFormat::aswgCharacterRole             = "characterRole";
+const char* const WavAudioFormat::aswgActorName                 = "actorName";
+const char* const WavAudioFormat::aswgActorGender               = "actorGender";
+const char* const WavAudioFormat::aswgDirector                  = "director";
+const char* const WavAudioFormat::aswgDirection                 = "direction";
+const char* const WavAudioFormat::aswgFxUsed                    = "fxUsed";
+const char* const WavAudioFormat::aswgUsageRights               = "usageRights";
+const char* const WavAudioFormat::aswgIsUnion                   = "isUnion";
+const char* const WavAudioFormat::aswgAccent                    = "accent";
+const char* const WavAudioFormat::aswgEmotion                   = "emotion";
+const char* const WavAudioFormat::aswgComposor                  = "composor";
+const char* const WavAudioFormat::aswgArtist                    = "artist";
+const char* const WavAudioFormat::aswgSongTitle                 = "songTitle";
+const char* const WavAudioFormat::aswgGenre                     = "genre";
+const char* const WavAudioFormat::aswgSubGenre                  = "subGenre";
+const char* const WavAudioFormat::aswgProducer                  = "producer";
+const char* const WavAudioFormat::aswgMusicSup                  = "musicSup";
+const char* const WavAudioFormat::aswgInstrument                = "instrument";
+const char* const WavAudioFormat::aswgMusicPublisher            = "musicPublisher";
+const char* const WavAudioFormat::aswgRightsOwner               = "rightsOwner";
+const char* const WavAudioFormat::aswgIsSource                  = "isSource";
+const char* const WavAudioFormat::aswgIsLoop                    = "isLoop";
+const char* const WavAudioFormat::aswgIntensity                 = "intensity";
+const char* const WavAudioFormat::aswgIsFinal                   = "isFinal";
+const char* const WavAudioFormat::aswgOrderRef                  = "orderRef";
+const char* const WavAudioFormat::aswgIsOst                     = "isOst";
+const char* const WavAudioFormat::aswgIsCinematic               = "isCinematic";
+const char* const WavAudioFormat::aswgIsLicensed                = "isLicensed";
+const char* const WavAudioFormat::aswgIsDiegetic                = "isDiegetic";
+const char* const WavAudioFormat::aswgMusicVersion              = "musicVersion";
+const char* const WavAudioFormat::aswgIsrcId                    = "isrcId";
+const char* const WavAudioFormat::aswgTempo                     = "tempo";
+const char* const WavAudioFormat::aswgTimeSig                   = "timeSig";
+const char* const WavAudioFormat::aswgInKey                     = "inKey";
+const char* const WavAudioFormat::aswgBillingCode               = "billingCode";
+const char* const WavAudioFormat::aswgVersion                   = "IXML_VERSION";
+
+const char* const WavAudioFormat::ISRC                                  = "ISRC";
+const char* const WavAudioFormat::internationalStandardRecordingCode    = "international standard recording code";
+const char* const WavAudioFormat::tracktionLoopInfo                     = "tracktion loop info";
 
 //==============================================================================
 namespace WavFileHelpers
@@ -862,6 +948,157 @@ namespace WavFileHelpers
         }
     };
 
+    //=============================================================================
+    namespace IXMLChunk
+    {
+        static const std::unordered_set<String> aswgMetadataKeys
+        {
+            WavAudioFormat::aswgContentType,
+            WavAudioFormat::aswgProject,
+            WavAudioFormat::aswgOriginator,
+            WavAudioFormat::aswgOriginatorStudio,
+            WavAudioFormat::aswgNotes,
+            WavAudioFormat::aswgSession,
+            WavAudioFormat::aswgState,
+            WavAudioFormat::aswgEditor,
+            WavAudioFormat::aswgMixer,
+            WavAudioFormat::aswgFxChainName,
+            WavAudioFormat::aswgChannelConfig,
+            WavAudioFormat::aswgAmbisonicFormat,
+            WavAudioFormat::aswgAmbisonicChnOrder,
+            WavAudioFormat::aswgAmbisonicNorm,
+            WavAudioFormat::aswgMicType,
+            WavAudioFormat::aswgMicConfig,
+            WavAudioFormat::aswgMicDistance,
+            WavAudioFormat::aswgRecordingLoc,
+            WavAudioFormat::aswgIsDesigned,
+            WavAudioFormat::aswgRecEngineer,
+            WavAudioFormat::aswgRecStudio,
+            WavAudioFormat::aswgImpulseLocation,
+            WavAudioFormat::aswgCategory,
+            WavAudioFormat::aswgSubCategory,
+            WavAudioFormat::aswgCatId,
+            WavAudioFormat::aswgUserCategory,
+            WavAudioFormat::aswgUserData,
+            WavAudioFormat::aswgVendorCategory,
+            WavAudioFormat::aswgFxName,
+            WavAudioFormat::aswgLibrary,
+            WavAudioFormat::aswgCreatorId,
+            WavAudioFormat::aswgSourceId,
+            WavAudioFormat::aswgRmsPower,
+            WavAudioFormat::aswgLoudness,
+            WavAudioFormat::aswgLoudnessRange,
+            WavAudioFormat::aswgMaxPeak,
+            WavAudioFormat::aswgSpecDensity,
+            WavAudioFormat::aswgZeroCrossRate,
+            WavAudioFormat::aswgPapr,
+            WavAudioFormat::aswgText,
+            WavAudioFormat::aswgEfforts,
+            WavAudioFormat::aswgEffortType,
+            WavAudioFormat::aswgProjection,
+            WavAudioFormat::aswgLanguage,
+            WavAudioFormat::aswgTimingRestriction,
+            WavAudioFormat::aswgCharacterName,
+            WavAudioFormat::aswgCharacterGender,
+            WavAudioFormat::aswgCharacterAge,
+            WavAudioFormat::aswgCharacterRole,
+            WavAudioFormat::aswgActorName,
+            WavAudioFormat::aswgActorGender,
+            WavAudioFormat::aswgDirector,
+            WavAudioFormat::aswgDirection,
+            WavAudioFormat::aswgFxUsed,
+            WavAudioFormat::aswgUsageRights,
+            WavAudioFormat::aswgIsUnion,
+            WavAudioFormat::aswgAccent,
+            WavAudioFormat::aswgEmotion,
+            WavAudioFormat::aswgComposor,
+            WavAudioFormat::aswgArtist,
+            WavAudioFormat::aswgSongTitle,
+            WavAudioFormat::aswgGenre,
+            WavAudioFormat::aswgSubGenre,
+            WavAudioFormat::aswgProducer,
+            WavAudioFormat::aswgMusicSup,
+            WavAudioFormat::aswgInstrument,
+            WavAudioFormat::aswgMusicPublisher,
+            WavAudioFormat::aswgRightsOwner,
+            WavAudioFormat::aswgIsSource,
+            WavAudioFormat::aswgIsLoop,
+            WavAudioFormat::aswgIntensity,
+            WavAudioFormat::aswgIsFinal,
+            WavAudioFormat::aswgOrderRef,
+            WavAudioFormat::aswgIsOst,
+            WavAudioFormat::aswgIsCinematic,
+            WavAudioFormat::aswgIsLicensed,
+            WavAudioFormat::aswgIsDiegetic,
+            WavAudioFormat::aswgMusicVersion,
+            WavAudioFormat::aswgIsrcId,
+            WavAudioFormat::aswgTempo,
+            WavAudioFormat::aswgTimeSig,
+            WavAudioFormat::aswgInKey,
+            WavAudioFormat::aswgBillingCode
+        };
+
+        static void addToMetadata (StringMap& destValues, const String& source)
+        {
+            if (auto xml = parseXML (source))
+            {
+                if (xml->hasTagName ("BWFXML"))
+                {
+                    if (const auto* entry = xml->getChildByName (WavAudioFormat::aswgVersion))
+                        destValues[WavAudioFormat::aswgVersion] = entry->getAllSubText();
+
+                    if (const auto* aswgElement = xml->getChildByName ("ASWG"))
+                    {
+                        for (const auto* entry : aswgElement->getChildIterator())
+                        {
+                            const auto& tag = entry->getTagName();
+
+                            if (aswgMetadataKeys.find (tag) != aswgMetadataKeys.end())
+                                destValues[tag] = entry->getAllSubText();
+                        }
+                    }
+                }
+            }
+        }
+
+        static MemoryBlock createFrom (const StringMap& values)
+        {
+            auto createTextElement = [] (const StringRef& key, const StringRef& value)
+            {
+                auto* elem = new XmlElement (key);
+                elem->addTextElement (value);
+                return elem;
+            };
+
+            std::unique_ptr<XmlElement> aswgElement;
+
+            for (const auto& pair : values)
+            {
+                if (aswgMetadataKeys.find (pair.first) != aswgMetadataKeys.end())
+                {
+                    if (aswgElement == nullptr)
+                        aswgElement = std::make_unique<XmlElement> ("ASWG");
+
+                    aswgElement->addChildElement (createTextElement (pair.first, pair.second));
+                }
+            }
+
+            MemoryOutputStream outputStream;
+
+            if (aswgElement != nullptr)
+            {
+                XmlElement xml ("BWFXML");
+                auto aswgVersion = getValueWithDefault (values, WavAudioFormat::aswgVersion, "3.01");
+                xml.addChildElement (createTextElement (WavAudioFormat::aswgVersion, aswgVersion));
+                xml.addChildElement (aswgElement.release());
+                xml.writeTo (outputStream);
+                outputStream.writeRepeatedByte (0, outputStream.getDataSize());
+            }
+
+            return outputStream.getMemoryBlock();
+        }
+    }
+
     //==============================================================================
     namespace AXMLChunk
     {
@@ -880,7 +1117,12 @@ namespace WavFileHelpers
                                 auto ISRCCode = xml4->getAllSubText().fromFirstOccurrenceOf ("ISRC:", false, true);
 
                                 if (ISRCCode.isNotEmpty())
-                                    destValues[WavAudioFormat::ISRC] = ISRCCode;
+                                {
+                                    // We set ISRC here for backwards compatibility.
+                                    // If the INFO 'source' field is set in the info chunk, then the
+                                    // value for this key will be overwritten later.
+                                    destValues[WavAudioFormat::riffInfoSource] = destValues[WavAudioFormat::internationalStandardRecordingCode] = ISRCCode;
+                                }
                             }
                         }
                     }
@@ -890,11 +1132,24 @@ namespace WavFileHelpers
 
         static MemoryBlock createFrom (const StringMap& values)
         {
-            auto ISRC = getValueWithDefault (values, WavAudioFormat::ISRC);
+            // Use the new ISRC key if it is present, but fall back to the
+            // INFO 'source' value for backwards compatibility.
+            auto ISRC = getValueWithDefault (values,
+                                             WavAudioFormat::internationalStandardRecordingCode,
+                                             getValueWithDefault (values, WavAudioFormat::riffInfoSource));
+
             MemoryOutputStream xml;
 
             if (ISRC.isNotEmpty())
             {
+                // If you are trying to set the ISRC, make sure that you are using
+                // WavAudioFormat::internationalStandardRecordingCode as the metadata key,
+                // and that the value is 12 characters long. If you are trying to set the
+                // 'source' field in the INFO chunk, set the
+                // WavAudioFormat::internationalStandardRecordingCode metadata field to the
+                // empty string to silence this assertion.
+                jassert (ISRC.length() == 12);
+
                 xml << "<ebucore:ebuCoreMain xmlns:dc=\" http://purl.org/dc/elements/1.1/\" "
                                             "xmlns:ebucore=\"urn:ebu:metadata-schema:ebuCore_2012\">"
                          "<ebucore:coreMetadata>"
@@ -1124,6 +1379,12 @@ public:
                     input->readIntoMemoryBlock (axml, (ssize_t) length);
                     AXMLChunk::addToMetadata (dict, axml.toString());
                 }
+                else if (chunkType == chunkName ("iXML"))
+                {
+                    MemoryBlock ixml;
+                    input->readIntoMemoryBlock (ixml, (ssize_t) length);
+                    IXMLChunk::addToMetadata (dict, ixml.toString());
+                }
                 else if (chunkType == chunkName ("LIST"))
                 {
                     auto subChunkType = input->readInt();
@@ -1338,6 +1599,7 @@ public:
             const auto map = toMap (metadataValues);
 
             bwavChunk     = BWAVChunk::createFrom (map);
+            ixmlChunk     = IXMLChunk::createFrom (map);
             axmlChunk     = AXMLChunk::createFrom (map);
             smplChunk     = SMPLChunk::createFrom (map);
             instChunk     = InstChunk::createFrom (map);
@@ -1408,7 +1670,7 @@ public:
     }
 
 private:
-    MemoryBlock tempBlock, bwavChunk, axmlChunk, smplChunk, instChunk, cueChunk, listChunk, listInfoChunk, acidChunk, trckChunk;
+    MemoryBlock tempBlock, bwavChunk, ixmlChunk, axmlChunk, smplChunk, instChunk, cueChunk, listChunk, listInfoChunk, acidChunk, trckChunk;
     uint64 lengthInSamples = 0, bytesWritten = 0;
     int64 headerPosition = 0;
     bool writeFailed = false;
@@ -1438,6 +1700,7 @@ private:
         int64 riffChunkSize = (int64) (4 /* 'RIFF' */ + 8 + 40 /* WAVEFORMATEX */
                                        + 8 + audioDataSize + (audioDataSize & 1)
                                        + chunkSize (bwavChunk)
+                                       + chunkSize (ixmlChunk)
                                        + chunkSize (axmlChunk)
                                        + chunkSize (smplChunk)
                                        + chunkSize (instChunk)
@@ -1520,6 +1783,7 @@ private:
         }
 
         writeChunk (bwavChunk,     chunkName ("bext"));
+        writeChunk (ixmlChunk,     chunkName ("iXML"));
         writeChunk (axmlChunk,     chunkName ("axml"));
         writeChunk (smplChunk,     chunkName ("smpl"));
         writeChunk (instChunk,     chunkName ("inst"), 7);
@@ -1869,6 +2133,8 @@ struct WaveAudioFormatTests : public UnitTest
         for (int i = numElementsInArray (WavFileHelpers::ListInfoChunk::types); --i >= 0;)
             metadataValues[WavFileHelpers::ListInfoChunk::types[i]] = WavFileHelpers::ListInfoChunk::types[i];
 
+        metadataValues[WavAudioFormat::internationalStandardRecordingCode] = WavAudioFormat::internationalStandardRecordingCode;
+
         if (metadataValues.size() > 0)
             metadataValues["MetaDataSource"] = "WAV";
 
@@ -1882,30 +2148,168 @@ struct WaveAudioFormatTests : public UnitTest
         metadataArray.addUnorderedMap (metadataValues);
 
         {
-            beginTest ("Creating a basic wave writer");
+            beginTest ("Metadata can be written and read");
 
-            std::unique_ptr<AudioFormatWriter> writer (format.createWriterFor (new MemoryOutputStream (memoryBlock, false),
-                                                                               44100.0, numTestAudioBufferChannels,
-                                                                               32, metadataArray, 0));
-            expect (writer != nullptr);
-
-            AudioBuffer<float> buffer (numTestAudioBufferChannels, numTestAudioBufferSamples);
-            buffer.clear();
-
-            beginTest ("Writing audio data to the basic wave writer");
-            expect (writer->writeFromAudioSampleBuffer (buffer, 0, numTestAudioBufferSamples));
+            const auto newMetadata = getMetadataAfterReading (format, writeToBlock (format, metadataArray));
+            expect (newMetadata == metadataArray, "Somehow, the metadata is different!");
         }
 
         {
-            beginTest ("Creating a basic wave reader");
+            beginTest ("Files containing a riff info source and an empty ISRC associate the source with the riffInfoSource key");
+            StringPairArray meta;
+            meta.addMap ({ { WavAudioFormat::riffInfoSource, "customsource" },
+                           { WavAudioFormat::internationalStandardRecordingCode, "" } });
+            const auto mb = writeToBlock (format, meta);
+            checkPatternsPresent (mb, { "INFOISRC" });
+            checkPatternsNotPresent (mb, { "ISRC:", "<ebucore" });
+            const auto a = getMetadataAfterReading (format, mb);
+            expect (a[WavAudioFormat::riffInfoSource] == "customsource");
+            expect (a[WavAudioFormat::internationalStandardRecordingCode] == "");
+        }
 
-            std::unique_ptr<AudioFormatReader> reader (format.createReaderFor (new MemoryInputStream (memoryBlock, false), false));
-            expect (reader != nullptr);
-            expect (reader->metadataValues == metadataArray, "Somehow, the metadata is different!");
+        {
+            beginTest ("Files containing a riff info source and no ISRC associate the source with both keys "
+                       "for backwards compatibility");
+            StringPairArray meta;
+            meta.addMap ({ { WavAudioFormat::riffInfoSource, "customsource" } });
+            const auto mb = writeToBlock (format, meta);
+            checkPatternsPresent (mb, { "INFOISRC", "ISRC:customsource", "<ebucore" });
+            const auto a = getMetadataAfterReading (format, mb);
+            expect (a[WavAudioFormat::riffInfoSource] == "customsource");
+            expect (a[WavAudioFormat::internationalStandardRecordingCode] == "customsource");
+        }
+
+        {
+            beginTest ("Files containing an ISRC associate the value with the internationalStandardRecordingCode key "
+                       "and the riffInfoSource key for backwards compatibility");
+            StringPairArray meta;
+            meta.addMap ({ { WavAudioFormat::internationalStandardRecordingCode, "AABBBCCDDDDD" } });
+            const auto mb = writeToBlock (format, meta);
+            checkPatternsPresent (mb, { "ISRC:AABBBCCDDDDD", "<ebucore" });
+            checkPatternsNotPresent (mb, { "INFOISRC" });
+            const auto a = getMetadataAfterReading (format, mb);
+            expect (a[WavAudioFormat::riffInfoSource] == "AABBBCCDDDDD");
+            expect (a[WavAudioFormat::internationalStandardRecordingCode] == "AABBBCCDDDDD");
+        }
+
+        {
+            beginTest ("Files containing an ISRC and a riff info source associate the values with the appropriate keys");
+            StringPairArray meta;
+            meta.addMap ({ { WavAudioFormat::riffInfoSource, "source" } });
+            meta.addMap ({ { WavAudioFormat::internationalStandardRecordingCode, "UUVVVXXYYYYY" } });
+            const auto mb = writeToBlock (format, meta);
+            checkPatternsPresent (mb, { "INFOISRC", "ISRC:UUVVVXXYYYYY", "<ebucore" });
+            const auto a = getMetadataAfterReading (format, mb);
+            expect (a[WavAudioFormat::riffInfoSource] == "source");
+            expect (a[WavAudioFormat::internationalStandardRecordingCode] == "UUVVVXXYYYYY");
+        }
+
+        {
+            beginTest ("Files containing ASWG metadata read and write correctly");
+            MemoryBlock block;
+            StringPairArray meta;
+
+            for (const auto& key : WavFileHelpers::IXMLChunk::aswgMetadataKeys)
+                meta.set (key, "Test123&<>");
+
+            {
+                auto writer = rawToUniquePtr (WavAudioFormat().createWriterFor (new MemoryOutputStream (block, false), 48000, 1, 32, meta, 0));
+                expect (writer != nullptr);
+            }
+
+            expect ([&]
+            {
+                auto input = std::make_unique<MemoryInputStream> (block, false);
+
+                while (! input->isExhausted())
+                {
+                    char chunkType[4] {};
+                    auto pos = input->getPosition();
+
+                    input->read (chunkType, 4);
+
+                    if (memcmp (chunkType, "iXML", 4) == 0)
+                    {
+                        auto length = (uint32) input->readInt();
+
+                        MemoryBlock xmlBlock;
+                        input->readIntoMemoryBlock (xmlBlock, (ssize_t) length);
+
+                        return parseXML (xmlBlock.toString()) != nullptr;
+                    }
+
+                    input->setPosition (pos + 1);
+                }
+
+                return false;
+            }());
+
+            {
+                auto reader = rawToUniquePtr (WavAudioFormat().createReaderFor (new MemoryInputStream (block, false), true));
+                expect (reader != nullptr);
+
+                for (const auto& key : meta.getAllKeys())
+                {
+                    const auto oldValue = meta.getValue (key, "!");
+                    const auto newValue = reader->metadataValues.getValue (key, "");
+                    expectEquals (oldValue, newValue);
+                }
+
+                expect (reader->metadataValues.getValue (WavAudioFormat::aswgVersion, "") == "3.01");
+            }
         }
     }
 
 private:
+    MemoryBlock writeToBlock (WavAudioFormat& format, StringPairArray meta)
+    {
+        MemoryBlock mb;
+
+        {
+            // The destructor of the writer will modify the block, so make sure that we've
+            // destroyed the writer before returning the block!
+            auto writer = rawToUniquePtr (format.createWriterFor (new MemoryOutputStream (mb, false),
+                                                                  44100.0,
+                                                                  numTestAudioBufferChannels,
+                                                                  16,
+                                                                  meta,
+                                                                  0));
+            expect (writer != nullptr);
+            AudioBuffer<float> buffer (numTestAudioBufferChannels, numTestAudioBufferSamples);
+            expect (writer->writeFromAudioSampleBuffer (buffer, 0, numTestAudioBufferSamples));
+        }
+
+        return mb;
+    }
+
+    StringPairArray getMetadataAfterReading (WavAudioFormat& format, const MemoryBlock& mb)
+    {
+        auto reader = rawToUniquePtr (format.createReaderFor (new MemoryInputStream (mb, false), true));
+        expect (reader != nullptr);
+        return reader->metadataValues;
+    }
+
+    template <typename Fn>
+    void checkPatterns (const MemoryBlock& mb, const std::vector<std::string>& patterns, Fn&& fn)
+    {
+        for (const auto& pattern : patterns)
+        {
+            const auto begin = static_cast<const char*> (mb.getData());
+            const auto end = begin + mb.getSize();
+            expect (fn (std::search (begin, end, pattern.begin(), pattern.end()), end));
+        }
+    }
+
+    void checkPatternsPresent (const MemoryBlock& mb, const std::vector<std::string>& patterns)
+    {
+        checkPatterns (mb, patterns, std::not_equal_to<>{});
+    }
+
+    void checkPatternsNotPresent (const MemoryBlock& mb, const std::vector<std::string>& patterns)
+    {
+        checkPatterns (mb, patterns, std::equal_to<>{});
+    }
+
     enum
     {
         numTestAudioBufferChannels = 2,

@@ -2,7 +2,7 @@
   ==============================================================================
 
    This file is part of the JUCE examples.
-   Copyright (c) 2020 - Raw Material Software Limited
+   Copyright (c) 2022 - Raw Material Software Limited
 
    The code included in this file is provided under the terms of the ISC license
    http://www.isc.org/downloads/software-support-policy/isc-license. Permission
@@ -192,20 +192,23 @@ private:
     {
         purchaseInProgress = false;
 
-        auto idx = findVoiceIndexFromIdentifier (info.purchase.productId);
-
-        if (isPositiveAndBelow (idx, voiceProducts.size()))
+        for (const auto productId : info.purchase.productIds)
         {
-            auto& voiceProduct = voiceProducts.getReference (idx);
+            auto idx = findVoiceIndexFromIdentifier (productId);
 
-            voiceProduct.isPurchased = success;
-            voiceProduct.purchaseInProgress = false;
-        }
-        else
-        {
-            // On failure Play Store will not tell us which purchase failed
-            for (auto& voiceProduct : voiceProducts)
+            if (isPositiveAndBelow (idx, voiceProducts.size()))
+            {
+                auto& voiceProduct = voiceProducts.getReference (idx);
+
+                voiceProduct.isPurchased = success;
                 voiceProduct.purchaseInProgress = false;
+            }
+            else
+            {
+                // On failure Play Store will not tell us which purchase failed
+                for (auto& voiceProduct : voiceProducts)
+                    voiceProduct.purchaseInProgress = false;
+            }
         }
 
         guiUpdater.triggerAsyncUpdate();
@@ -217,13 +220,16 @@ private:
         {
             for (auto& info : infos)
             {
-                auto idx = findVoiceIndexFromIdentifier (info.purchase.productId);
-
-                if (isPositiveAndBelow (idx, voiceProducts.size()))
+                for (const auto productId : info.purchase.productIds)
                 {
-                    auto& voiceProduct = voiceProducts.getReference (idx);
+                    auto idx = findVoiceIndexFromIdentifier (productId);
 
-                    voiceProduct.isPurchased = true;
+                    if (isPositiveAndBelow (idx, voiceProducts.size()))
+                    {
+                        auto& voiceProduct = voiceProducts.getReference (idx);
+
+                        voiceProduct.isPurchased = true;
+                    }
                 }
             }
 
@@ -442,15 +448,17 @@ public:
 
     Component* refreshComponentForRow (int row, bool selected, Component* existing) override
     {
+        auto safePtr = rawToUniquePtr (existing);
+
         if (isPositiveAndBelow (row, voiceProducts.size()))
         {
-            if (existing == nullptr)
-                existing = new VoiceRow (purchases);
+            if (safePtr == nullptr)
+                safePtr = std::make_unique<VoiceRow> (purchases);
 
-            if (auto* voiceRow = dynamic_cast<VoiceRow*> (existing))
+            if (auto* voiceRow = dynamic_cast<VoiceRow*> (safePtr.get()))
                 voiceRow->update (row, selected);
 
-            return existing;
+            return safePtr.release();
         }
 
         return nullptr;
@@ -499,7 +507,6 @@ public:
         voiceListBox.setRowHeight (66);
         voiceListBox.selectRow (0);
         voiceListBox.updateContent();
-        voiceListBox.getViewport()->setScrollOnDragEnabled (true);
 
         addAndMakeVisible (phraseLabel);
         addAndMakeVisible (phraseListBox);
