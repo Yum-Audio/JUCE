@@ -215,7 +215,9 @@ bool ComponentPeer::handleKeyPress (const KeyPress& keyInfo)
         if (auto* currentlyFocused = Component::getCurrentlyFocusedComponent())
         {
             currentlyFocused->moveKeyboardFocusToSibling (! keyInfo.getModifiers().isShiftDown());
-            return true;
+            keyWasUsed = (currentlyFocused != Component::getCurrentlyFocusedComponent());
+            return keyWasUsed;
+//            return true;
         }
     }
 
