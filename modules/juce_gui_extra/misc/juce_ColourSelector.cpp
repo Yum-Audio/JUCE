@@ -527,7 +527,7 @@ void ColourSelector::paint (Graphics& g)
             if (slider->isVisible())
                 g.drawText (slider->getName() + ":",
                             0, slider->getY(),
-                            slider->getX() - 8, slider->getHeight(),
+                            slider->getX(), slider->getHeight(),
                             Justification::centredRight, false);
         }
     }
