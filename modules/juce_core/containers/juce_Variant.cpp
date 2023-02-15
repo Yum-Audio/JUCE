@@ -464,7 +464,7 @@ struct var::VariantType
 
     static void methodWriteToStream (const ValueUnion&, OutputStream& output)
     {
-        jassertfalse; // Can't write a method to a stream!
+//        jassertfalse; // Can't write a method to a stream!
         output.writeCompressedInt (0);
     }
 
