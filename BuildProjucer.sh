@@ -30,7 +30,7 @@ fi
 cd "$BUILD_DIR"
 
 if [ $currentos == MinGw ]; then 
-cmake .. -G "Visual Studio 16 2019"
+cmake .. -G "Visual Studio 17 2022"
 else
 cmake .. -G "Xcode" -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
 fi
