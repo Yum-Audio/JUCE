@@ -212,9 +212,9 @@ DECLARE_JNI_CLASS (AndroidMulticastLock, "android/net/wifi/WifiManager$Multicast
 DECLARE_JNI_CLASS (AndroidWifiManager, "android/net/wifi/WifiManager")
 #undef JNI_CLASS_MEMBERS
 
-static LocalRef<jobject> getMulticastLock()
+LocalRef<jobject> getMulticastLock()
 {
-    static LocalRef<jobject> multicastLock;
+    LocalRef<jobject> multicastLock;
     static bool hasChecked = false;
 
     if (! hasChecked)
