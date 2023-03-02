@@ -469,9 +469,9 @@ struct MenuWindow  : public Component
     {
         auto& lf = getLookAndFeel();
 
-        if (options.getParentComponent())
-            lf.drawResizableFrame (g, getWidth(), getHeight(),
-                                   BorderSize<int> (getLookAndFeel().getPopupMenuBorderSizeWithOptions (options)));
+//        if (options.getParentComponent())
+//            lf.drawResizableFrame (g, getWidth(), getHeight(),
+//                                   BorderSize<int> (getLookAndFeel().getPopupMenuBorderSizeWithOptions (options)));
 
         if (canScroll())
         {
