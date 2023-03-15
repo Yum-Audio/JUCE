@@ -312,7 +312,7 @@ String::String (const char* const t)
         any unicode string to a valid C++ string literal, creating ascii escape sequences that will
         work in any compiler.
     */
-    jassert (t == nullptr || CharPointer_ASCII::isValidString (t, std::numeric_limits<int>::max()));
+//    jassert (t == nullptr || CharPointer_ASCII::isValidString (t, std::numeric_limits<int>::max()));
 }
 
 String::String (const char* const t, const size_t maxChars)

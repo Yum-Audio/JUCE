@@ -21,7 +21,7 @@ BUILD_DIR="$PROJUCER_DIR/cmakebuild"
 "$FRUT_PATH/../../Build.sh"
 
 cd "$PROJUCER_DIR"
-"$FRUT_PATH/bin/Jucer2Cmake" reprojucer "$JUCERPROJ" "$FRUT_PATH/cmake/Reprojucer.cmake"
+"$FRUT_PATH/bin/Jucer2CMake" reprojucer "$JUCERPROJ" "$FRUT_PATH/cmake/Reprojucer.cmake"
 
 if [ ! -d  "$BUILD_DIR" ]; then
 mkdir "$BUILD_DIR"
@@ -29,8 +29,10 @@ fi
 
 cd "$BUILD_DIR"
 
-if [ $currentos == MinGw ]; then 
+if [ $currentos = MinGw ]; then 
 cmake .. -G "Visual Studio 17 2022"
+elif [ $currentos = Linux ]; then
+cmake .. -G "Unix Makefiles"
 else
 cmake .. -G "Xcode" -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
 fi
@@ -39,10 +41,12 @@ cmake --build . --config "Release" --parallel 8
 
 
 
-if [ $currentos == MinGw ]; then 
+if [ $currentos = MinGw ]; then 
 BUILD="$BUILD_DIR/Release/App/Projucer.exe"
-else
+elif [ $currentos = Mac ]; then 
 BUILD="$BUILD_DIR/Release/Projucer.app"
+elif [ $currentos = Linux ]; then 
+BUILD="$BUILD_DIR/Projucer"
 fi
 
 "$BUILD"

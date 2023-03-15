@@ -51,7 +51,7 @@ struct ChildProcessPingThread  : public Thread,
         pingReceived();
     }
 
-    void startPinging()                     { startThread (4); }
+    void startPinging()                     { startThread (Priority::low); }
 
     void pingReceived() noexcept            { countdown = timeoutMs / 1000 + 1; }
     void triggerConnectionLostMessage()     { triggerAsyncUpdate(); }
@@ -90,7 +90,7 @@ struct ChildProcessCoordinator::Connection  : public InterprocessConnection,
                                               private ChildProcessPingThread
 {
     Connection (ChildProcessCoordinator& m, const String& pipeName, int timeout)
-        : InterprocessConnection (false, magicCoordWorkerConnectionHeader),
+        : InterprocessConnection (false, Thread::Priority::normal, magicCoordWorkerConnectionHeader),
           ChildProcessPingThread (timeout),
           owner (m)
     {
@@ -200,7 +200,7 @@ struct ChildProcessWorker::Connection  : public InterprocessConnection,
                                          private ChildProcessPingThread
 {
     Connection (ChildProcessWorker& p, const String& pipeName, int timeout)
-        : InterprocessConnection (false, magicCoordWorkerConnectionHeader),
+        : InterprocessConnection (false, Thread::Priority::normal, magicCoordWorkerConnectionHeader),
           ChildProcessPingThread (timeout),
           owner (p)
     {
