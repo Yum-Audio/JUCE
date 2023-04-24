@@ -135,7 +135,8 @@ public:
         alphanumeric characters, underscores, or the '-' and ':' characters.
     */
     static bool isValidIdentifier (const String& possibleIdentifier) noexcept;
-
+    static bool isIdentifierExcludedFromFile (const Identifier& identifier) noexcept;
+    
 private:
     String name;
     

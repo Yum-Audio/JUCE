@@ -83,4 +83,10 @@ bool Identifier::isExcludedFromFile () const noexcept
     return name.endsWith (excludeFromFile);
 }
 
+bool Identifier::isIdentifierExcludedFromFile (const Identifier& identifier) noexcept
+{
+    return identifier.name.endsWith (excludeFromFile);
+}
+
+
 } // namespace juce
