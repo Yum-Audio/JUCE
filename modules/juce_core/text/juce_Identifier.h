@@ -54,6 +54,14 @@ public:
     Identifier (const String& name);
 
     /** Creates an identifier with a specified name.
+     Because this name may need to be used in contexts such as script variables or XML
+     tags, it must only contain ascii letters and digits, or the underscore character.
+     
+     if you set writeToFile to false the name will be extended with _exclude. This is a custom extension to exclude Identifiers when writing valuetrees to disk.
+     */
+    Identifier (const String& name, bool writeToFile);
+
+    /** Creates an identifier with a specified name.
         Because this name may need to be used in contexts such as script variables or XML
         tags, it must only contain ascii letters and digits, or the underscore character.
     */
@@ -116,6 +124,9 @@ public:
     /** Returns true if this Identifier is null */
     bool isNull() const noexcept                                        { return name.isEmpty(); }
 
+    /** Returns false if the identifier is excluded from file */
+    bool isExcludedFromFile () const noexcept;
+    
     /** A null identifier. */
     static Identifier null;
 
@@ -127,6 +138,9 @@ public:
 
 private:
     String name;
+    
+    const static inline String excludeFromFile{ "_excludeFromFile" };
+
 };
 
 } // namespace juce

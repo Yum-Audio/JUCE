@@ -49,6 +49,13 @@ Identifier::Identifier (const String& nm)
     jassert (nm.isNotEmpty());
 }
 
+Identifier::Identifier (const String& nm, bool writeToFile)
+: name (StringPool::getGlobalPool().getPooledString (nm + (String)(writeToFile ? "" : excludeFromFile)))
+{
+    // An Identifier cannot be created from an empty string!
+    jassert (nm.isNotEmpty());
+}
+
 Identifier::Identifier (const char* nm)
     : name (StringPool::getGlobalPool().getPooledString (nm))
 {
@@ -69,6 +76,11 @@ bool Identifier::isValidIdentifier (const String& possibleIdentifier) noexcept
 {
     return possibleIdentifier.isNotEmpty()
             && possibleIdentifier.containsOnly ("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-:#@$%");
+}
+
+bool Identifier::isExcludedFromFile () const noexcept
+{
+    return name.endsWith (excludeFromFile);
 }
 
 } // namespace juce
