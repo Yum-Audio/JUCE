@@ -629,11 +629,16 @@ public:
         */
         int getInitiallySelectedItemId() const noexcept              { return initiallySelectedItemId; }
 
+        
+        Options withItemTextJustification (const Justification& type) const;
+        Justification getItemTextJustification () const noexcept { return {justificationFlags}; }
+        
     private:
         //==============================================================================
         Rectangle<int> targetArea;
         WeakReference<Component> targetComponent, parentComponent, componentToWatchForDeletion;
         int visibleItemID = 0, minWidth = 0, minColumns = 1, maxColumns = 0, standardHeight = 0, initiallySelectedItemId = 0;
+        int justificationFlags = Justification::centredLeft;
         bool isWatchingForDeletion = false;
         PopupDirection preferredPopupDirection = PopupDirection::downwards;
     };

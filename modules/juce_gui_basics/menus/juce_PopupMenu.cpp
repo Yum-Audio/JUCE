@@ -2382,4 +2382,10 @@ void PopupMenu::LookAndFeelMethods::getIdealPopupMenuItemSize (const String&, bo
 
 int PopupMenu::LookAndFeelMethods::getPopupMenuBorderSize() { return 0; }
 
+PopupMenu::Options juce::PopupMenu::Options::withItemTextJustification(const Justification &type) const
+{
+    auto o = with (*this, &Options::justificationFlags, type.getFlags ());
+    return o;
+}
+
 } // namespace juce
