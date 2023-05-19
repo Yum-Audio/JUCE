@@ -49,8 +49,8 @@ Identifier::Identifier (const String& nm)
     jassert (nm.isNotEmpty());
 }
 
-Identifier::Identifier (const String& nm, bool writeToFile)
-: name (StringPool::getGlobalPool().getPooledString (nm + (String)(writeToFile ? "" : excludeFromFile)))
+Identifier::Identifier (const String& nm, bool writeToFile, bool applyToCopies)
+: name (StringPool::getGlobalPool().getPooledString (nm + createFlagString((writeToFile ? 0 : ExcludeFromFile) | (applyToCopies ? 0 : DontApplyToCpies))))
 {
     // An Identifier cannot be created from an empty string!
     jassert (nm.isNotEmpty());
@@ -80,12 +80,20 @@ bool Identifier::isValidIdentifier (const String& possibleIdentifier) noexcept
 
 bool Identifier::isExcludedFromFile () const noexcept
 {
-    return name.endsWith (excludeFromFile);
+    return (getFlags () & ExcludeFromFile) == ExcludeFromFile;
 }
 
-bool Identifier::isIdentifierExcludedFromFile (const Identifier& identifier) noexcept
+int Identifier::getFlags () const
 {
-    return identifier.name.endsWith (excludeFromFile);
+    return name.fromLastOccurrenceOf(FlagIdentifier, false, false).getTrailingIntValue();
+}
+
+String Identifier::createFlagString (int flags)
+{
+    if (flags == None)
+        return "";
+    
+    return FlagIdentifier + (String)flags;
 }
 
 

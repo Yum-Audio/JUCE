@@ -59,7 +59,7 @@ public:
      
      if you set writeToFile to false the name will be extended with _exclude. This is a custom extension to exclude Identifiers when writing valuetrees to disk.
      */
-    Identifier (const String& name, bool writeToFile);
+    Identifier (const String& name, bool writeToFile, bool applyToCopies = true);
 
     /** Creates an identifier with a specified name.
         Because this name may need to be used in contexts such as script variables or XML
@@ -130,18 +130,27 @@ public:
     /** A null identifier. */
     static Identifier null;
 
+    enum Flags
+    {
+        None = 0,
+        ExcludeFromFile = 1,
+        DontApplyToCpies = 2,
+        All = ~None
+    };
+    
     /** Checks a given string for characters that might not be valid in an Identifier.
         Since Identifiers are used as a script variables and XML attributes, they should only contain
         alphanumeric characters, underscores, or the '-' and ':' characters.
     */
     static bool isValidIdentifier (const String& possibleIdentifier) noexcept;
-    static bool isIdentifierExcludedFromFile (const Identifier& identifier) noexcept;
+    
+    int getFlags () const;
     
 private:
     String name;
+    static String createFlagString (int flags);
     
-    const static inline String excludeFromFile{ "_excludeFromFile" };
-
+    const static inline String FlagIdentifier{ "__flag_" };
 };
 
 } // namespace juce
