@@ -83,6 +83,11 @@ bool Identifier::isExcludedFromFile () const noexcept
     return (getFlags () & ExcludeFromFile) == ExcludeFromFile;
 }
 
+bool Identifier::isExcludedFromApplying () const noexcept
+{
+    return (getFlags () & DontApplyToCpies) == DontApplyToCpies;
+}
+
 int Identifier::getFlags () const
 {
     return name.fromLastOccurrenceOf(FlagIdentifier, false, false).getTrailingIntValue();

@@ -127,6 +127,8 @@ public:
     /** Returns false if the identifier is excluded from file */
     bool isExcludedFromFile () const noexcept;
     
+    bool isExcludedFromApplying () const noexcept;
+    
     /** A null identifier. */
     static Identifier null;
 
