@@ -60,7 +60,9 @@
 #include "../../../Utilities/LiveConstantDemo.h"
 #include "../../../Utilities/MultithreadingDemo.h"
 #include "../../../Utilities/NetworkingDemo.h"
-#include "../../../Utilities/OSCDemo.h"
+#if JUCE_MODULE_AVAILABLE_juce_osc
+ #include "../../../Utilities/OSCDemo.h"
+#endif
 #include "../../../Utilities/SystemInfoDemo.h"
 #include "../../../Utilities/TimersAndEventsDemo.h"
 #include "../../../Utilities/UnitTestsDemo.h"
@@ -101,7 +103,9 @@ void registerDemos_One() noexcept
     REGISTER_DEMO (LiveConstantDemo,        Utilities, false)
     REGISTER_DEMO (MultithreadingDemo,      Utilities, false)
     REGISTER_DEMO (NetworkingDemo,          Utilities, false)
+   #if JUCE_MODULE_AVAILABLE_juce_osc
     REGISTER_DEMO (OSCDemo,                 Utilities, false)
+   #endif
     REGISTER_DEMO (SystemInfoDemo,          Utilities, false)
     REGISTER_DEMO (TimersAndEventsDemo,     Utilities, false)
     REGISTER_DEMO (UnitTestsDemo,           Utilities, false)

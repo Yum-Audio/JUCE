@@ -232,6 +232,16 @@ namespace juce
   }
  #endif
 
+#elif JUCE_WASM
+ #include <emscripten.h>
+
+#if JUCE_OPENAL
+ #include <AL/al.h>
+ #include <AL/alc.h>
+#endif
+
+ #include "native/juce_wasm_Audio.cpp"
+ #include "native/juce_wasm_Midi.cpp"
 #endif
 
 #if ! JUCE_SYSTEMAUDIOVOL_IMPLEMENTED

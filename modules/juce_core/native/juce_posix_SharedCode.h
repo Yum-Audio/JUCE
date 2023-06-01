@@ -926,7 +926,7 @@ public:
 
         #if JUCE_MAC || JUCE_IOS
          const auto scheduler = SCHED_OTHER;
-        #elif JUCE_LINUX || JUCE_BSD
+        #elif JUCE_LINUX || JUCE_BSD || JUCE_WASM
          const auto backgroundSched = prio == Thread::Priority::background ? SCHED_IDLE
                                                                            : SCHED_OTHER;
          const auto scheduler = isRealtime ? SCHED_RR : backgroundSched;
@@ -939,7 +939,7 @@ public:
 
     void apply ([[maybe_unused]] PosixThreadAttribute& attr) const
     {
-        #if JUCE_LINUX || JUCE_BSD
+        #if JUCE_LINUX || JUCE_BSD || JUCE_WASM
          const struct sched_param param { getPriority() };
 
          pthread_attr_setinheritsched (attr.get(), PTHREAD_EXPLICIT_SCHED);
@@ -1009,7 +1009,7 @@ void JUCE_CALLTYPE Thread::yield()
    calls (the API for these has changed about quite a bit in various Linux
    versions, and a lot of distros seem to ship with obsolete versions)
 */
-#if defined (CPU_ISSET) && ! defined (SUPPORT_AFFINITIES)
+#if defined (CPU_ISSET) && ! defined (SUPPORT_AFFINITIES) && ! JUCE_WASM
  #define SUPPORT_AFFINITIES 1
 #endif
 

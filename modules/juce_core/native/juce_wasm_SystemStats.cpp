@@ -20,6 +20,8 @@
   ==============================================================================
 */
 
+#include <emscripten/threading.h>
+
 namespace juce
 {
 
@@ -32,36 +34,92 @@ void Logger::outputDebugString (const String& text)
 SystemStats::OperatingSystemType SystemStats::getOperatingSystemType()  { return WASM; }
 String SystemStats::getOperatingSystemName()    { return "WASM"; }
 bool SystemStats::isOperatingSystem64Bit()      { return true; }
-String SystemStats::getDeviceDescription()      { return "Web-browser"; }
-String SystemStats::getDeviceManufacturer()     { return {}; }
-String SystemStats::getCpuVendor()              { return {}; }
-String SystemStats::getCpuModel()               { return {}; }
-int SystemStats::getCpuSpeedInMegahertz()       { return 0; }
-int SystemStats::getMemorySizeInMegabytes()     { return 0; }
+String SystemStats::getDeviceDescription()
+{
+    char* str = (char*)EM_ASM_INT({
+        var platform = navigator.platform;
+        var lengthBytes = lengthBytesUTF8(platform) + 1;
+        var heapBytes = _malloc(lengthBytes);
+        stringToUTF8(platform, heapBytes, lengthBytes);
+        return heapBytes;
+    });
+    String ret(str);
+    free((void*)str);
+    return ret;
+
+}
+
+String SystemStats::getDeviceManufacturer()
+{
+    return getDeviceDescription();
+}
+
+String SystemStats::getCpuVendor()              { return getDeviceManufacturer(); }
+String SystemStats::getCpuModel()               { return "WASM"; }
+int SystemStats::getCpuSpeedInMegahertz()       { return 1000; }
+
+int SystemStats::getMemorySizeInMegabytes()
+{
+    int heapSizeLimit = EM_ASM_INT({
+        if (performance != undefined)
+            if (performance.memory != undefined)
+                return performance.memory.jsHeapSizeLimit / 1024 / 1024;
+        return 128; // some arbitrary number just to get things working (hopefully)
+    });
+    return heapSizeLimit;
+}
+
 int SystemStats::getPageSize()                  { return 0; }
 String SystemStats::getLogonName()              { return {}; }
 String SystemStats::getFullUserName()           { return {}; }
 String SystemStats::getComputerName()           { return {}; }
-String SystemStats::getUserLanguage()           { return {}; }
-String SystemStats::getUserRegion()             { return {}; }
-String SystemStats::getDisplayLanguage()        { return {}; }
+String SystemStats::getUniqueDeviceID()         { jassertfalse; return {}; }
+
+String SystemStats::getDisplayLanguage()
+{
+    char* str = (char*)MAIN_THREAD_EM_ASM_INT({
+        var language = navigator.language;
+        var lengthBytes = lengthBytesUTF8(language) + 1;
+        var heapBytes = _malloc(lengthBytes);
+        stringToUTF8(language, heapBytes, lengthBytes);
+        return heapBytes;
+    });
+    String ret(str);
+    free((void*)str);
+    return ret;
+}
+
+String SystemStats::getUserLanguage()
+{
+    String langRegion = getDisplayLanguage();
+    return langRegion.upToFirstOccurrenceOf("-", false, true);
+}
+
+String SystemStats::getUserRegion()
+{
+    String langRegion = getDisplayLanguage();
+    return langRegion.fromFirstOccurrenceOf("-", false, true);
+}
 
 //==============================================================================
 void CPUInformation::initialise() noexcept
 {
-    numLogicalCPUs = 1;
-    numPhysicalCPUs = 1;
+    numLogicalCPUs = emscripten_num_logical_cores();
+    numPhysicalCPUs = numLogicalCPUs;
 }
 
 //==============================================================================
 uint32 juce_millisecondsSinceStartup() noexcept
 {
-    return static_cast<uint32> (emscripten_get_now());
+    return (uint32) (Time::getHighResolutionTicks() / 1000);
 }
 
 int64 Time::getHighResolutionTicks() noexcept
 {
-    return static_cast<int64> (emscripten_get_now() * 1000.0);
+    timespec t;
+    clock_gettime (CLOCK_MONOTONIC, &t);
+
+    return (t.tv_sec * (int64) 1000000) + (t.tv_nsec / 1000);
 }
 
 int64 Time::getHighResolutionTicksPerSecond() noexcept
@@ -71,7 +129,7 @@ int64 Time::getHighResolutionTicksPerSecond() noexcept
 
 double Time::getMillisecondCounterHiRes() noexcept
 {
-    return emscripten_get_now();
+    return (double) getHighResolutionTicks() * 0.001;
 }
 
 bool Time::setSystemTimeToThisTime() const

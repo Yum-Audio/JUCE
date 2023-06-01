@@ -368,6 +368,10 @@ static jobject makeAndroidPoint (Point<int> p)
   #include "native/juce_android_ContentSharer.cpp"
  #endif
 
+#elif JUCE_WASM
+ #include "native/juce_wasm_Windowing.cpp"
+ #include "native/juce_wasm_FileChooser.cpp"
+
 #endif
 
 namespace juce

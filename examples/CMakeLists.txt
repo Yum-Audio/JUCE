@@ -31,7 +31,7 @@ function(_juce_add_pips)
         CONFIGURE_DEPENDS LIST_DIRECTORIES false
         "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
 
-    if((CMAKE_SYSTEM_NAME STREQUAL "Linux") OR (CMAKE_SYSTEM_NAME MATCHES ".*BSD"))
+    if((CMAKE_SYSTEM_NAME STREQUAL "Linux") OR (CMAKE_SYSTEM_NAME MATCHES ".*BSD") OR EMSCRIPTEN)
         list(REMOVE_ITEM headers
             "${CMAKE_CURRENT_SOURCE_DIR}/CameraDemo.h"
             "${CMAKE_CURRENT_SOURCE_DIR}/PushNotificationsDemo.h"
@@ -51,6 +51,17 @@ function(_juce_add_pips)
 
     if(NOT TARGET juce_vst2_sdk)
         list(REMOVE_ITEM headers "${CMAKE_CURRENT_SOURCE_DIR}/ReaperEmbeddedViewPluginDemo.h")
+    endif()
+
+    if(EMSCRIPTEN)
+        list(REMOVE_ITEM headers
+            "${CMAKE_CURRENT_SOURCE_DIR}/AnalyticsCollectionDemo.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/OpenGLDemo.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/OpenGLDemo2D.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/OpenGLAppDemo.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/OSCDemo.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/UnitTestsDemo.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/WebBrowserDemo.h")
     endif()
 
     foreach(header IN ITEMS ${headers})

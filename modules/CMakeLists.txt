@@ -21,10 +21,7 @@
 #
 # ==============================================================================
 
-juce_add_modules(
-    INSTALL_PATH "include/JUCE-${JUCE_VERSION}/modules"
-    ALIAS_NAMESPACE juce
-    juce_analytics
+list(APPEND modules
     juce_audio_basics
     juce_audio_devices
     juce_audio_formats
@@ -40,7 +37,22 @@ juce_add_modules(
     juce_graphics
     juce_gui_basics
     juce_gui_extra
+
+    juce_product_unlocking
+    )
+
+if(NOT EMSCRIPTEN)
+    list(APPEND modules
+    juce_analytics
+    juce_video
     juce_opengl
     juce_osc
-    juce_product_unlocking
-    juce_video)
+    )
+endif()
+
+juce_add_modules(
+    INSTALL_PATH "include/JUCE-${JUCE_VERSION}/modules"
+    ALIAS_NAMESPACE juce
+    ${modules}
+)
+

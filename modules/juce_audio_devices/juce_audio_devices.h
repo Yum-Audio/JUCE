@@ -130,6 +130,13 @@
  #define JUCE_USE_ANDROID_OBOE 1
 #endif
 
+/** Config: JUCE_OPENAL
+    Enables OpenAL Audio devices
+*/
+#ifndef JUCE_OPENAL
+ #define JUCE_OPENAL 1
+#endif
+
 /** Config: JUCE_USE_OBOE_STABILIZED_CALLBACK
     If JUCE_USE_ANDROID_OBOE is enabled, enabling this will wrap output audio
     streams in the oboe::StabilizedCallback class. This class attempts to keep

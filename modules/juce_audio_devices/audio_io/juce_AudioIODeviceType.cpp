@@ -143,4 +143,10 @@ void AudioIODeviceType::callDeviceChangeListeners()
  AudioIODeviceType* AudioIODeviceType::createAudioIODeviceType_Oboe()      { return nullptr; }
 #endif
 
+#if JUCE_WASM && JUCE_OPENAL
+ AudioIODeviceType* AudioIODeviceType::createAudioIODeviceType_OpenAL()    { return new OpenALAudioIODeviceType(); }
+#else
+ AudioIODeviceType* AudioIODeviceType::createAudioIODeviceType_OpenAL()         { return nullptr; }
+#endif
+
 } // namespace juce

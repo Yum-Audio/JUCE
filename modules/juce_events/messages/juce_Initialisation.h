@@ -127,6 +127,19 @@ public:
 
   #define JUCE_MAIN_FUNCTION_DEFINITION
 
+ #elif JUCE_WASM
+  #define JUCE_CREATE_APPLICATION_DEFINE(AppClass) \
+    juce::JUCEApplicationBase* juce_CreateApplication(); \
+    juce::JUCEApplicationBase* juce_CreateApplication() { return new AppClass(); }
+
+   #define JUCE_MAIN_FUNCTION_DEFINITION \
+   extern void launchApp(int argc, char* argv[]); \
+   extern "C" int main(int argc, char* argv[]) \
+   { \
+      launchApp(argc, argv); \
+      return 0; \
+   }
+
  #else
 
   #define JUCE_CREATE_APPLICATION_DEFINE(AppClass) \

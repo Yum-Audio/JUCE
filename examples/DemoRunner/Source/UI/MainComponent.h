@@ -60,7 +60,9 @@ private:
     std::unique_ptr<DemoContentComponent> contentComponent;
     SidePanel demosPanel  { "Demos", 250, true };
 
+#if JUCE_MODULE_AVAILABLE_juce_opengl
     OpenGLContext openGLContext;
+#endif
     ComponentPeer* peer = nullptr;
     StringArray renderingEngines;
     int currentRenderingEngineIdx = -1;

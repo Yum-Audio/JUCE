@@ -424,8 +424,9 @@ void MainComponent::parentHierarchyChanged()
         if (peer != nullptr)
             renderingEngines = peer->getAvailableRenderingEngines();
 
+#if JUCE_MODULE_AVAILABLE_juce_opengl
         renderingEngines.add ("OpenGL Renderer");
-
+#endif
         currentRenderingEngineIdx = renderingEngines.indexOf (previousRenderingEngine);
 
         if (currentRenderingEngineIdx < 0)
@@ -447,12 +448,15 @@ void MainComponent::updateRenderingEngine (int renderingEngineIndex)
     {
         if (isShowingHeavyweightDemo)
             return;
-
+#if JUCE_MODULE_AVAILABLE_juce_opengl
         openGLContext.attachTo (*getTopLevelComponent());
+#endif
     }
     else
     {
+#if JUCE_MODULE_AVAILABLE_juce_opengl
         openGLContext.detach();
+#endif
         peer->setCurrentRenderingEngine (renderingEngineIndex);
     }
 

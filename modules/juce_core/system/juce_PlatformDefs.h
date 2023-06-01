@@ -81,6 +81,8 @@ namespace juce
   #define JUCE_BREAK_IN_DEBUGGER        { __builtin_debugtrap(); }
 #elif JUCE_ANDROID
   #define JUCE_BREAK_IN_DEBUGGER        { __builtin_trap(); }
+#elif JUCE_WASM
+  #define JUCE_BREAK_IN_DEBUGGER       { }
 #else
   #define JUCE_BREAK_IN_DEBUGGER        { __asm int 3 }
 #endif
@@ -298,7 +300,7 @@ namespace juce
 #endif
 
 //==============================================================================
-#if JUCE_ANDROID && ! defined (DOXYGEN)
+#if (JUCE_ANDROID || JUCE_WASM) && ! defined (DOXYGEN)
  #define JUCE_MODAL_LOOPS_PERMITTED 0
 #elif ! defined (JUCE_MODAL_LOOPS_PERMITTED)
  /** Some operating environments don't provide a modal loop mechanism, so this flag can be

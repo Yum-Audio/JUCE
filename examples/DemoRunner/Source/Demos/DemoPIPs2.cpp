@@ -36,7 +36,7 @@
 #include "../../../GUI/AnimationAppDemo.h"
 #include "../../../GUI/AnimationDemo.h"
 #include "../../../GUI/BouncingBallWavetableDemo.h"
-#if JUCE_USE_CAMERA && ! (JUCE_LINUX || JUCE_BSD)
+#if JUCE_USE_CAMERA && ! (JUCE_LINUX || JUCE_BSD || JUCE_WASM)
  #include "../../../GUI/CameraDemo.h"
 #endif
 #if ! JUCE_ANDROID
@@ -64,7 +64,9 @@
 #if ! (JUCE_LINUX || JUCE_BSD)
  #include "../../../GUI/VideoDemo.h"
 #endif
-#include "../../../GUI/WebBrowserDemo.h"
+#if ! JUCE_WASM
+ #include "../../../GUI/WebBrowserDemo.h"
+#endif
 #include "../../../GUI/WidgetsDemo.h"
 #include "../../../GUI/WindowsDemo.h"
 
@@ -76,7 +78,7 @@ void registerDemos_Two() noexcept
     REGISTER_DEMO (AnimationAppDemo,          GUI, false)
     REGISTER_DEMO (AnimationDemo,             GUI, false)
     REGISTER_DEMO (BouncingBallWavetableDemo, GUI, false)
-   #if JUCE_USE_CAMERA && ! (JUCE_LINUX || JUCE_BSD)
+   #if JUCE_USE_CAMERA && ! (JUCE_LINUX || JUCE_BSD || JUCE_WASM)
     REGISTER_DEMO (CameraDemo,                GUI, true)
    #endif
    #if ! JUCE_ANDROID
@@ -101,10 +103,12 @@ void registerDemos_Two() noexcept
     REGISTER_DEMO (OpenGLDemo,                GUI, true)
    #endif
     REGISTER_DEMO (PropertiesDemo,            GUI, false)
-   #if ! (JUCE_LINUX || JUCE_BSD)
+   #if ! (JUCE_LINUX || JUCE_BSD || JUCE_WASM)
     REGISTER_DEMO (VideoDemo,                 GUI, true)
    #endif
+   #if ! JUCE_WASM
     REGISTER_DEMO (WebBrowserDemo,            GUI, true)
+   #endif
     REGISTER_DEMO (WidgetsDemo,               GUI, false)
     REGISTER_DEMO (WindowsDemo,               GUI, false)
 }

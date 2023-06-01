@@ -305,6 +305,7 @@ PluginHostType::HostType PluginHostType::getHostType()
     if (hostFilename.containsIgnoreCase   ("pluginval"))         return pluginval;
     if (hostFilename.containsIgnoreCase   ("AudioPluginHost"))   return JUCEPluginHost;
 
+   #elif JUCE_WASM
    #elif JUCE_IOS
    #elif JUCE_ANDROID
    #else

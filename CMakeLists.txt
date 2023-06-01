@@ -27,6 +27,22 @@ project(JUCE VERSION 7.0.5 LANGUAGES C CXX)
 
 include(CMakeDependentOption)
 
+if(EMSCRIPTEN)
+    add_compile_options("-pthread" "-sUSE_FREETYPE=1" "-sUSE_PTHREADS=1" "-gsource-map" "-Wbad-function-cast" "-Wcast-function-type")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -gsource-map -pthread -s USE_FREETYPE=1 -s PROXY_TO_PTHREAD=1  -lrt -ldl -lpthread -lopenal -o output.html")
+
+
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s EXPORTED_FUNCTIONS=\"['_main', '_juce_animationFrameCallback', '_juce_mouseCallback', '_juce_keyboardCallback', '_juce_inputCallback']\" -s EXPORTED_RUNTIME_METHODS=\"['cwrap']\"")
+
+    # Bundle fonts - local path @ emscripten path
+    # emscripten path is the default path provided by juce in juce_linux_Fonts
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --preload-file /opt/X11/share/fonts/@/usr/X11R6/lib/X11/fonts")
+
+    # Make emscripten output the .html file
+    set(CMAKE_EXECUTABLE_SUFFIX ".html")
+
+endif()
+
 set_property(GLOBAL PROPERTY USE_FOLDERS YES)
 
 set(JUCE_MODULES_DIR "${JUCE_SOURCE_DIR}/modules" CACHE INTERNAL

@@ -93,4 +93,7 @@
 #elif JUCE_ANDROID
  #include "native/juce_android_Messaging.cpp"
 
+#elif JUCE_WASM
+ #include "native/juce_wasm_Messaging.cpp"
+
 #endif

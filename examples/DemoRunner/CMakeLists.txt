@@ -62,17 +62,25 @@ target_compile_definitions(DemoRunner PRIVATE
     JUCE_USE_CAMERA=1
     JUCE_USE_CURL=1
     JUCE_USE_MP3AUDIOFORMAT=1
-    JUCE_WEB_BROWSER=1)
+    JUCE_WEB_BROWSER=0)
 
-target_link_libraries(DemoRunner PRIVATE
-    juce::juce_analytics
+list(APPEND modules
     juce::juce_audio_utils
     juce::juce_box2d
     juce::juce_dsp
+    juce::juce_product_unlocking)
+
+if(NOT EMSCRIPTEN)
+    list(APPEND modules
+    juce::juce_analytics
+    juce::juce_video
     juce::juce_opengl
     juce::juce_osc
-    juce::juce_product_unlocking
-    juce::juce_video
+    )
+endif()
+
+target_link_libraries(DemoRunner PRIVATE
+    ${modules}
     juce::juce_recommended_config_flags
     juce::juce_recommended_lto_flags
     juce::juce_recommended_warning_flags)
