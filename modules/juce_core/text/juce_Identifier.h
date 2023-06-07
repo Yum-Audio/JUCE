@@ -59,7 +59,7 @@ public:
      
      if you set writeToFile to false the name will be extended with _exclude. This is a custom extension to exclude Identifiers when writing valuetrees to disk.
      */
-    Identifier (const String& name, bool writeToFile, bool applyToCopies = true);
+    explicit Identifier (const String& name, int customFlags);
 
     /** Creates an identifier with a specified name.
         Because this name may need to be used in contexts such as script variables or XML
@@ -107,16 +107,16 @@ public:
     inline bool operator>= (StringRef other) const noexcept             { return name >= other; }
 
     /** Returns this identifier as a string. */
-    const String& toString() const noexcept                             { return name; }
+    const String& toString() const noexcept                             { return value; }
 
     /** Returns this identifier's raw string pointer. */
-    operator String::CharPointerType() const noexcept                   { return name.getCharPointer(); }
+    operator String::CharPointerType() const noexcept                   { return value.getCharPointer(); }
 
     /** Returns this identifier's raw string pointer. */
-    String::CharPointerType getCharPointer() const noexcept             { return name.getCharPointer(); }
+    String::CharPointerType getCharPointer() const noexcept             { return value.getCharPointer(); }
 
     /** Returns this identifier as a StringRef. */
-    operator StringRef() const noexcept                                 { return name; }
+    operator StringRef() const noexcept                                 { return value; }
 
     /** Returns true if this Identifier is not null */
     bool isValid() const noexcept                                       { return name.isNotEmpty(); }
@@ -149,7 +149,10 @@ public:
     int getFlags () const;
     
 private:
-    String name;
+    String name; // the name without flags
+    String value; // the name including flagIdentifier and flags
+    int flags; // ...
+    
     static String createFlagString (int flags);
     
     const static inline String FlagIdentifier{ "__flag_" };
