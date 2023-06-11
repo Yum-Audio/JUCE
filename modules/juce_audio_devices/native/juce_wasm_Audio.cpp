@@ -36,21 +36,34 @@ int getAudioContextSampleRate() {
     });
 }
 
+#if ASSUME_AL_FLOAT32
+#define AL_FORMAT_MONO_FLOAT32                   0x10010
+#define AL_FORMAT_STEREO_FLOAT32                 0x10011
+#endif
+
 //==============================================================================
 class OpenALAudioIODevice : public AudioIODevice
 {
-    static const int numBuffers{3};
-    int bufferSize{512};
-    double sampleRate{44100.0};
-    int numIn{0}, numOut{2};
-    int numUnderRuns{0};
-    bool playing{false};
+    int bufferSize = 512;
+    double sampleRate = 44100.0;
 
-    ALCdevice* device{nullptr};
-    ALCcontext* context{nullptr};
-    ALuint source, buffers[numBuffers];
+    int numIn = 1;
+    int numOut = 2;
+
+    std::atomic<int> numUnderRuns = 0;
+    bool playing = false;
+
+    ALCdevice* inDevice = nullptr;
+    ALenum inFormat;
+
+    ALCdevice* outDevice = nullptr;
+    ALCcontext* outContext = nullptr;
+    ALenum outFormat;
+
+    ALuint source;
+    Array<ALuint> bufferIds;
     ALuint frequency;
-    ALenum format, errorCode{AL_NO_ERROR};
+    ALenum errorCode = AL_NO_ERROR;
 
 public:
     class AudioFeedStateMachine
@@ -73,14 +86,29 @@ public:
     private:
         OpenALAudioIODevice* parent{nullptr};
         AudioIODeviceCallback* callback{nullptr};
-        ALuint source, buffers[numBuffers];
-        int numOut, bufferSize;
 
-        int16* formatBuffer{nullptr};
-        float** buffersIn{nullptr};
-        float** buffersOut{nullptr};
+        int16* formatBuffer = nullptr;
+        int16* inFormatBuffer = nullptr;
 
-        StateType state{StateWaitingForInteraction};
+        AudioSampleBuffer inBuffer;
+        AudioSampleBuffer outBuffer;
+
+        StateType state = StateWaitingForInteraction;
+
+        static int getBytesPerSample (ALCenum format)
+        {
+            switch(format)
+            {
+                case AL_FORMAT_MONO8:          return 1;
+                case AL_FORMAT_MONO16:         return 2;
+                case AL_FORMAT_STEREO8:        return 1;
+                case AL_FORMAT_STEREO16:       return 2;
+            #ifdef ASSUME_AL_FLOAT32
+                case AL_FORMAT_MONO_FLOAT32:   return 4;
+                case AL_FORMAT_STEREO_FLOAT32: return 4;
+            #endif
+            }
+        }
 
     public:
         AudioFeedStateMachine (OpenALAudioIODevice* parent) : parent(parent) { }
@@ -90,20 +118,10 @@ public:
             OpenALAudioIODevice::sessionsOnMainThread.removeAllInstancesOf (this);
 
             if (StatePlaying)
-            {
                 callback->audioDeviceStopped();
-            }
 
-            if (formatBuffer)
-                delete [] formatBuffer;
-            if (buffersOut)
-            {
-                for (int i = 0; i < parent->numOut; i ++)
-                    delete [] buffersOut[i];
-                delete [] buffersOut;
-            }
-            if (buffersIn)
-                delete [] buffersIn;
+            delete[] formatBuffer;
+            delete[] inFormatBuffer;
         }
 
         StateType getState () const { return state; }
@@ -112,18 +130,48 @@ public:
         {
             this->callback = callback;
             callback->audioDeviceAboutToStart (parent);
+        }
 
-            source = parent->source;
-            for (int i = 0; i < numBuffers; i ++)
-                buffers[i] = parent->buffers[i];
-            
-            numOut = parent->numOut;
-            bufferSize = parent->bufferSize;
+        static void convertFloatToInt16 (AudioSampleBuffer& juce, int16_t* openAl)
+        {
+            constexpr auto scale = 0x7fff;
+
+            for (int c = 0; c < juce.getNumChannels(); c ++)
+            {
+                for (int i = 0; i < juce.getNumSamples(); i ++)
+                {
+                    float x = std::min(juce.getArrayOfWritePointers()[c][i], 1.0f);
+                    x = std::max(x, -1.0f);
+                    openAl[c + i * juce.getNumChannels()] = x * scale;
+                }
+            }
+        }
+
+        static void convertInt16ToFloat (int16_t* openAl, AudioSampleBuffer& juce, int numSamples)
+        {
+            constexpr float scale = 1.0f / 0x7fff;
+
+            const auto samples = jmin (numSamples, juce.getNumSamples());
+
+            for (int c = 0; c < juce.getNumChannels(); c ++)
+            {
+                for (int i = 0; i < samples; i ++)
+                {
+                    const auto index = c + i * juce.getNumChannels();
+                    juce.setSample (c, i, openAl[index] * scale);
+                }
+            }
         }
 
         // Loosely adapted from https://kcat.strangesoft.net/openal-tutorial.html
         StatusType nextStep (bool shouldStop = false)
         {
+            const auto source = parent->source;
+
+            const auto numIn = parent->numIn;
+            const auto numOut = parent->numOut;
+            const auto bufferSize = parent->bufferSize;
+
             if (state == StateWaitingForInteraction)
             {
                 if (shouldStop)
@@ -131,29 +179,25 @@ public:
                     state = StateStopped;
                     return StatusGood;
                 }
-                int status = MAIN_THREAD_EM_ASM_INT ({
-                    return window.juce_hadUserInteraction;
-                });
-                if (status)
+
+                state = StatePlaying;
+
+                alSourceQueueBuffers (source, parent->bufferIds.size(), parent->bufferIds.data());
+                alSourcePlay (source);
+                if ((parent->errorCode = alGetError()) != AL_NO_ERROR)
                 {
-                    state = StatePlaying;
-
-                    alSourceQueueBuffers (source, numBuffers, buffers);
-                    alSourcePlay (source);
-                    if ((parent->errorCode = alGetError()) != AL_NO_ERROR)
-                    {
-                        DBG("OpenAL error occurred when starting to play.");
-                        return StatusError;
-                    }
-
-                    formatBuffer = new int16[bufferSize * numOut];
-                    buffersIn  = new float*[16];
-                    buffersOut = new float*[16];
-                    for (int i = 0; i < numOut; i ++)
-                        buffersOut[i] = new float[bufferSize];
+                    DBG("OpenAL error occurred when starting to play.");
+                    return StatusError;
                 }
+
+                inBuffer.setSize (parent->numIn, 16384);
+                outBuffer.setSize (parent->numOut, parent->bufferSize);
+
+                formatBuffer = new int16[bufferSize * numOut];
+                inFormatBuffer = new int16[parent->getAvailableBufferSizes().getLast() * numIn];
             }
-            if (state == StatePlaying)
+
+            else if (state == StatePlaying)
             {
                 if (shouldStop)
                 {
@@ -170,42 +214,49 @@ public:
                     alSourcePlay (source);
                 
                 alGetSourcei (source, AL_BUFFERS_PROCESSED, & val);
-                if (val <= 0) return StatusNeedToWait;
-                if (val == numBuffers)
-                    parent->numUnderRuns ++;
+                if (val <= 0)
+                    return StatusNeedToWait;
 
-                int bytePerSampleOut = 2 * numOut;
+                if (inBuffer.getNumSamples() > 0 && inBuffer.getNumChannels() > 0)
+                    inBuffer.clear();
+
+                if (outBuffer.getNumSamples() > 0 && outBuffer.getNumChannels() > 0)
+                    outBuffer.clear();
+
+                if (val == parent->bufferIds.size())
+                    parent->numUnderRuns++;
+
+                int bytePerSampleOut = getBytesPerSample (parent->outFormat) * numOut;
+
+                // inCapturedSamples will remain 0 until the user clicks allow for the microphone
+                // https://emscripten.org/docs/porting/Audio.html#emscripten-specific-capture-behavior
+                ALCint inCapturedSamples = 0;
+                alcGetIntegerv (parent->inDevice, ALC_CAPTURE_SAMPLES, 1, &inCapturedSamples);
+                alcCaptureSamples (parent->inDevice, inFormatBuffer, inCapturedSamples);
+
+                convertInt16ToFloat (inFormatBuffer, inBuffer, inCapturedSamples);
 
                 while (val --)
                 {
-                    for (int c = 0; c < numOut; c ++)
-                        for (int i = 0; i < bufferSize; i ++)
-                            buffersOut[c][i] = 0;
-
                     AudioIODeviceCallbackContext ctx;
 
                     callback->audioDeviceIOCallbackWithContext (
-                        (const float* const*)buffersIn, parent->numIn,
-                        buffersOut, numOut, bufferSize, ctx);
-                    
-                    for (int c = 0; c < numOut; c ++)
-                    {
-                        for (int i = 0; i < bufferSize; i ++)
-                        {
-                            float x = std::min(buffersOut[c][i], 1.0f);
-                            x = std::max(x, -1.0f);
-                            formatBuffer[c + i * numOut] = x * 32767;
-                        }
-                    }
-                    
-                    alSourceUnqueueBuffers (source, 1, & buffer);
-                    alBufferData (buffer, parent->format, formatBuffer,
-                        bufferSize * bytePerSampleOut, parent->frequency);
-                    alSourceQueueBuffers (source, 1, & buffer);
+                        inBuffer.getArrayOfReadPointers(), inBuffer.getNumChannels(),
+                        outBuffer.getArrayOfWritePointers(), outBuffer.getNumChannels(),
+                        bufferSize, ctx);
+
+                    convertFloatToInt16 (outBuffer, formatBuffer);
+
+                    alSourceUnqueueBuffers (source, 1, &buffer);
+                    alBufferData (buffer, parent->outFormat, formatBuffer,
+                                  bufferSize * bytePerSampleOut, parent->frequency);
+
+                    alSourceQueueBuffers (source, 1, &buffer);
 
                     if ((parent->errorCode = alGetError()) != AL_NO_ERROR)
                     {
                         DBG("OpenAL error occurred when playing.");
+                        DBG(String(alcGetString(nullptr, parent->errorCode)));
                         return StatusError;
                     }
                 }
@@ -229,7 +280,6 @@ public:
 
         void start (AudioIODeviceCallback* callback)
         {
-            DBG("Starting OpenAL Audio Thread...");
             stateMachine.start (callback);
             juce::Thread::RealtimeOptions options;
             options.priority = 10;
@@ -238,7 +288,6 @@ public:
 
         void stop ()
         {
-            DBG("Stopping OpenAL Audio Thread...");
             stopThread (500);
         }
 
@@ -255,16 +304,15 @@ public:
 
 public:
     OpenALAudioIODevice (bool threadBased = false)
-    : AudioIODevice ("OpenAL", "OpenAL"), threadBased(threadBased)
+    : AudioIODevice ("OpenAL", "OpenAL")
+    , threadBased(threadBased)
     {
-        DBG("OpenALAudioIODevice: constructor");
     }
 
     ~OpenALAudioIODevice ()
     {
-        DBG("OpenALAudioIODevice: destructor");
         if (isDeviceOpen)
-            close();
+            closeInternal();
     }
 
     StringArray getOutputChannelNames () override
@@ -274,16 +322,24 @@ public:
 
     StringArray getInputChannelNames () override
     {
-        return {};
+        return { "In #1" };
     }
 
     Array<double> getAvailableSampleRates () override {
-        return { getAudioContextSampleRate() };
+        // OfflineAudioContexts are required to support sample rates ranging
+        // from 8000 to 96000.
+        static const Array<double> sampleRates =
+        {
+            22050, 32000, 37800, 44100, 48000, 88200, 96000
+        };
+
+        return sampleRates;
     }
-    
+
     Array<int> getAvailableBufferSizes () override 
     {
-        return { 128, 256, 384, 512, 768, 1024, 1536, 2048, 3072, 4096, 8192 };
+        // https://webaudio.github.io/web-audio-api/#dom-scriptprocessornode-buffersize
+        return { 256, 512, 1024, 2048, 4096, 8192, 16384 };
     }
     
     int getDefaultBufferSize () override
@@ -296,16 +352,13 @@ public:
                  double sampleRate,
                  int bufferSizeSamples) override
     {
-        DBG("OpenALAudioIODevice: open");
-        ScopedLock lock (sessionsLock);
+        const ScopedLock lock (sessionsLock);
         return openInternal (inputChannels, outputChannels,
-            sampleRate, bufferSizeSamples);
+                             sampleRate, bufferSizeSamples);
     }
     
     void close () override
     {
-        DBG("OpenALAudioIODevice: close");
-        ScopedLock lock (sessionsLock);
         closeInternal();
     }
 
@@ -316,15 +369,14 @@ public:
 
     void start (AudioIODeviceCallback* newCallback) override
     {
-        DBG("OpenALAudioIODevice: start");
-        ScopedLock lock (sessionsLock);
+        const ScopedLock lock (sessionsLock);
         startInternal (newCallback);
     }
 
     void stop () override
     {
-        DBG("OpenALAudioIODevice: stop");
-        ScopedLock lock (sessionsLock);
+        const ScopedLock lock (sessionsLock);
+
         if (isPlaying())
             stopInternal();
     }
@@ -336,23 +388,10 @@ public:
 
     String getLastError () override
     {
-        switch (errorCode)
-        {
-        case AL_NO_ERROR:
-            return "";
-        case AL_INVALID_NAME:
-            return "AL_INVALID_NAME";
-        case AL_INVALID_ENUM:
-            return "AL_INVALID_NAME";
-        case AL_INVALID_VALUE:
-            return "AL_INVALID_VALUE";
-        case AL_INVALID_OPERATION:
-            return "AL_INVALID_OPERATION";
-        case AL_OUT_OF_MEMORY:
-            return "AL_OUT_OF_MEMORY";
-        default:
-            return "UNDEFINED_ERROR";
-        }
+        if (errorCode != AL_NO_ERROR)
+            return getAlcError (errorCode);
+
+        return {};
     }
 
     //==============================================================================
@@ -363,23 +402,26 @@ public:
     BigInteger getActiveOutputChannels () const override
     {
         BigInteger b;
-        b.setRange (0, numIn, true);
+        b.setRange (0, numOut, true);
+
         return b;
     }
-    BigInteger getActiveInputChannels () const override {
+    BigInteger getActiveInputChannels () const override
+    {
         BigInteger b;
-        b.setRange (0, numOut, true);
+        b.setRange (0, numIn, true);
+
         return b;
     }
 
     int getOutputLatencyInSamples () override
     {
-        return numBuffers * bufferSize;
+        return bufferIds.size() * bufferSize;
     }
 
     int getInputLatencyInSamples () override
     {
-        return numBuffers * bufferSize;
+        return bufferIds.size() * bufferSize;
     }
 
     int getXRunCount () const noexcept override
@@ -391,8 +433,58 @@ public:
     static Array<AudioFeedStateMachine*> sessionsOnMainThread;
 
 private:
-    bool isDeviceOpen{false};
-    bool threadBased{false};
+    bool isDeviceOpen = false;
+    bool threadBased = false;
+
+    static String getAlcError(ALCenum err)
+    {
+        return alcGetString(nullptr, err);
+    }
+
+    static String getDeviceError (ALCdevice* device)
+    {
+        const auto err = alcGetError (device);
+
+        if (err != AL_NO_ERROR)
+            return getAlcError (err);
+
+        return {};
+    }
+
+    String openInputDevice()
+    {
+        if (numIn == 1)
+            inFormat = AL_FORMAT_MONO16;
+        else if (numOut == 2)
+            inFormat = AL_FORMAT_STEREO16;
+        else
+            return "Invalid input channel configuration.";
+
+        errorCode = alGetError();
+        inDevice = alcCaptureOpenDevice(nullptr, sampleRate, inFormat, bufferSize);
+
+        if (inDevice == nullptr)
+            return "Failed to open output device - " + getDeviceError (inDevice);
+
+        return {};
+    }
+
+    String openOutputDevice()
+    {
+        errorCode = alGetError();
+        outDevice = alcOpenDevice (nullptr);
+
+        if (outDevice == nullptr)
+            return "Failed to open output device - " + getDeviceError (inDevice);
+
+        outContext = alcCreateContext (outDevice, nullptr);
+        alcMakeContextCurrent (outContext);
+
+        if (outContext == nullptr || (errorCode = alGetError()) != AL_NO_ERROR)
+            return "Failed to create output context " + getAlcError (errorCode);
+
+        return {};
+    }
 
     String openInternal (const BigInteger& inputChannels,
                          const BigInteger& outputChannels,
@@ -401,76 +493,102 @@ private:
     {
         closeInternal();
 
+        this->numIn = inputChannels.countNumberOfSetBits();
+        this->numOut = outputChannels.countNumberOfSetBits();
         this->bufferSize = bufferSizeSamples;
         this->sampleRate = sampleRate;
 
-        ALenum errorCode = alGetError ();
-        device = alcOpenDevice (nullptr);
-        if (device == nullptr)
-            return "Failed to open device.";
-        DBG("OpenAL device has opened.");
+        if (numOut > 0)
+        {
+            const auto openOutResult = openOutputDevice();
+            if (openOutResult.isNotEmpty())
+                return openOutResult;
+        }
 
-        context = alcCreateContext (device, nullptr);
-        alcMakeContextCurrent (context);
-        if (context == nullptr || (errorCode = alGetError()) != AL_NO_ERROR)
-            return "Failed to create context.";
-        DBG("OpenAL context is created.");
+        bufferIds.resize(numIn + numOut);
 
-        alGenBuffers (numBuffers, buffers);
-        alGenSources (1, & source);
+        alGenBuffers (bufferIds.size(), bufferIds.data());
+        alGenSources (1, &source);
+
         if ((errorCode = alGetError()) != AL_NO_ERROR)
             return "Failed to generate sources.";
-        DBG("OpenAL sources and buffers are generated.");
 
         if (numOut == 1)
-            format = AL_FORMAT_MONO16;
+            outFormat = AL_FORMAT_MONO16;
         else if (numOut == 2)
-            format = AL_FORMAT_STEREO16;
+            outFormat = AL_FORMAT_STEREO16;
         else
             return "Invalid output channel configuration.";
-        frequency = (ALuint)sampleRate;
-        
+
+        frequency = (ALuint) sampleRate;
         isDeviceOpen = true;
+
+        if (numIn > 0)
+        {
+            const auto openInResult = openInputDevice();
+            if (openInResult.isNotEmpty())
+                return openInResult;
+        }
 
         return {};
     }
     
     void closeInternal ()
     {
+        const ScopedLock lock (sessionsLock);
         stopInternal();
 
         if (isDeviceOpen)
         {
-            alDeleteSources (1, & source);
-            alDeleteBuffers (numBuffers, buffers);
+            alDeleteSources (1, &source);
+            alDeleteBuffers (bufferIds.size(), bufferIds.data());
         }
-        if (context)
+
+        if (outContext)
         {
             alcMakeContextCurrent (nullptr);
-            alcDestroyContext (context);
-            context = nullptr;
+            alcDestroyContext (outContext);
+            outContext = nullptr;
         }
-        if (device)
+
+        const auto closeDevice = [this](ALCdevice*& dev)
         {
-            alcCloseDevice (device);
-            device = nullptr;
-        }
+            if (dev == nullptr)
+                return;
+
+            if (dev == inDevice)
+                alcCaptureCloseDevice (dev);
+            else
+                alcCloseDevice (dev);
+
+            dev = nullptr;
+        };
+
+        closeDevice (outDevice);
+        closeDevice (inDevice);
+
         isDeviceOpen = false;
     }
 
     void startInternal (AudioIODeviceCallback* newCallback)
     {
         numUnderRuns = 0;
+
         if (threadBased)
         {
             audioThread.reset (new AudioThread(this));
             audioThread->start (newCallback);
-        } else
+        }
+        else
         {
-            audioStateMachine.reset (new AudioFeedStateMachine(this));
+            audioStateMachine.reset (new AudioFeedStateMachine (this));
             audioStateMachine->start (newCallback);
             sessionsOnMainThread.add (audioStateMachine.get());
         }
+
+        if (inDevice != nullptr)
+            alcCaptureStart (inDevice);
+
         playing = true;
     }
 
@@ -478,16 +596,18 @@ private:
     {
         if (audioThread)
             audioThread->stop ();
-        if (audioStateMachine)
-            audioStateMachine.reset (nullptr);
+
+        audioStateMachine.reset (nullptr);
+
+        if (inDevice != nullptr)
+            alcCaptureStop (inDevice);
     }
 
     std::unique_ptr<AudioThread> audioThread;
     std::unique_ptr<AudioFeedStateMachine> audioStateMachine;
 };
 
-Array<OpenALAudioIODevice::AudioFeedStateMachine*>
-OpenALAudioIODevice::sessionsOnMainThread;
+Array<OpenALAudioIODevice::AudioFeedStateMachine*> OpenALAudioIODevice::sessionsOnMainThread;
 CriticalSection OpenALAudioIODevice::sessionsLock;
 
 //==============================================================================
@@ -495,30 +615,19 @@ struct OpenALAudioIODeviceType  : public AudioIODeviceType
 {
     OpenALAudioIODeviceType () : AudioIODeviceType ("OpenAL")
     {
-        MAIN_THREAD_EM_ASM({
-            if (window.juce_hadUserInteraction == undefined)
-            {
-                window.juce_hadUserInteraction = false;
-                window.juce_interactionListener = function() {
-                    window.juce_hadUserInteraction = true;
-                    window.removeEventListener("mousedown",
-                      window.juce_interactionListener);
-                };
-                window.addEventListener("mousedown",
-                    window.juce_interactionListener);
-            }
-        });
-        
         if (! openALMainThreadRegistered)
         {
-            registerCallbackToMainThread ([]() {
+            // The audio callback must be on the main thread
+            // See https://emscripten.org/docs/porting/Audio.html#guidelines-for-audio-on-emscripten
+            registerCallbackToMainThread ([]()
+            {
                 using AudioFeedStateMachine = OpenALAudioIODevice::AudioFeedStateMachine;
-                ScopedLock lock (OpenALAudioIODevice::sessionsLock);
+                const ScopedLock lock (OpenALAudioIODevice::sessionsLock);
+
                 for (auto* session : OpenALAudioIODevice::sessionsOnMainThread)
-                {
                     if (session->getState() != AudioFeedStateMachine::StateStopped)
                         session->nextStep ();
-                }
+
             });
             openALMainThreadRegistered = true;
         }

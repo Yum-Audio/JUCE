@@ -38,7 +38,7 @@ public:
     //==============================================================================
     void postMessage (MessageManager::MessageBase* const msg) noexcept
     {
-        ScopedLock sl (lock);
+        const ScopedLock sl { lock };
         queue.add (msg);
     }
 
@@ -54,7 +54,6 @@ public:
         }
     }
 
-
     //==============================================================================
     JUCE_DECLARE_SINGLETON (InternalMessageQueue, false)
 
@@ -64,7 +63,7 @@ private:
 
     juce::MessageManager::MessageBase::Ptr popNextMessage() noexcept
     {
-        const ScopedLock sl (lock);
+        const ScopedLock sl { lock };
         return queue.removeAndReturn (0);
     }
 };
@@ -157,12 +156,6 @@ extern "C" int juce_animationFrameCallback (double timestamp)
         return mainThreadID != messageThreadID;
     }
 
-    static double prevTimestamp = 0;
-    if (timestamp - prevTimestamp > 20)
-        DBG("juce_animationFrameCallback " << timestamp - prevTimestamp);
-
-    prevTimestamp = timestamp;
-
     const ScopedLock lk (mainThreadLoopFuncsLock);
     for (auto f : mainThreadLoopFuncs)
         f();
@@ -182,10 +175,6 @@ static void dispatchLoop()
         emscripten_cancel_main_loop();
         return;
     }
-
-    const ScopedLock lk (mainThreadLoopFuncsLock);
-    for (auto f : mainThreadLoopFuncs)
-        f();
 
     if (auto* queue = InternalMessageQueue::getInstanceWithoutCreating())
         queue->dispatchPendingMessages();
