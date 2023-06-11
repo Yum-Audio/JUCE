@@ -20,185 +20,281 @@
   ==============================================================================
 */
 
-#if ! defined(JUCE_WEBMIDI)
-#define JUCE_WEBMIDI 1
-#endif
-
-#if JUCE_WEBMIDI
-#define __WEB_MIDI_API__ 1
-#endif
-
-#include "wasm/RtMidi.cpp"
-
-#undef __WEB_MIDI_API__
+#include "wasm/libremidi/libremidi.hpp"
 
 namespace juce
 {
 
-class MidiInput::Pimpl {};
+// WebMIDI is only available of HTTPS
+// https://developer.mozilla.org/en-US/docs/Web/API/Web_MIDI_API
+static bool isWedMidiAvailable()
+{
+    return libremidi::webmidi_helpers::midi_access_emscripten::instance().available();
+}
 
-// (These are just stub functions if ALSA is unavailable...)
-MidiInput::MidiInput (const String& deviceName, const String& deviceID)
-    : deviceInfo (deviceName, deviceID)
+class MidiDeviceObserver
+{
+public:
+    MidiDeviceObserver()
+    {
+        configureObserver();
+    }
+
+    ~MidiDeviceObserver()
+    {
+        observer = nullptr;
+        clearSingletonInstance();
+    }
+
+    Array<MidiDeviceInfo> getInputs()
+    {
+        const ScopedReadLock lk (deviceLock);
+        return inputDevices;
+    }
+
+    Array<MidiDeviceInfo> getOutputs()
+    {
+        const ScopedReadLock lk (deviceLock);
+        return outputDevices;
+    }
+
+    JUCE_DECLARE_SINGLETON (MidiDeviceObserver, false)
+
+private:
+    void configureObserver()
+    {
+        if (isWedMidiAvailable())
+        {
+            const ScopedWriteLock lk (deviceLock);
+            libremidi::observer::callbacks callbacks
+            {
+                .input_added = [&] (int idx, const std::string& name)
+                {
+                    const ScopedWriteLock lk (deviceLock);
+                    std::cout << "MIDI Input connected: " << idx << " - " << name << std::endl;
+                    inputDevices.add ({ name, String (idx) });
+                },
+
+                .input_removed = [&] (int idx, const std::string& name)
+                {
+                    const ScopedWriteLock lk (deviceLock);
+                    inputDevices.removeIf([name](MidiDeviceInfo& dev){ return dev.name.toStdString() == name; });
+                },
+
+                .output_added = [&] (int idx, const std::string& name)
+                {
+                    const ScopedWriteLock lk (deviceLock);
+                    std::cout << "MIDI Output connected: " << idx << " - " << name << std::endl;
+                    outputDevices.add ({ name, String (idx) });
+                },
+
+                .output_removed = [&] (int idx, const std::string& name)
+                {
+                    const ScopedWriteLock lk (deviceLock);
+                    outputDevices.removeIf([name](MidiDeviceInfo& dev){ return dev.name.toStdString() == name; });
+                }
+            };
+
+            observer = std::make_unique<libremidi::observer>(libremidi::API::EMSCRIPTEN_WEBMIDI, std::move(callbacks));
+        }
+    }
+
+    ReadWriteLock deviceLock;
+
+    Array<MidiDeviceInfo> inputDevices;
+    Array<MidiDeviceInfo> outputDevices;
+
+    std::unique_ptr<libremidi::observer> observer;
+};
+
+JUCE_IMPLEMENT_SINGLETON (MidiDeviceObserver)
+
+class MidiInput::Pimpl
+{
+public:
+    Pimpl (const MidiDeviceInfo& device)
+    {
+        input = std::make_shared<libremidi::midi_in>();
+        input->set_callback([this](const libremidi::message& msg)
+        {
+            if (onMessageReceived != nullptr)
+                onMessageReceived (msg);
+        });
+
+        input->open_port (device.identifier.getIntValue(), device.name.toRawUTF8());
+    }
+
+    ~Pimpl()
+    {
+        input->set_callback (nullptr);
+    }
+
+    std::function<void(const libremidi::message&)> onMessageReceived;
+    MidiInputCallback* callback = nullptr;
+
+private:
+    std::shared_ptr<libremidi::midi_in> input;
+};
+
+//==============================================================================
+MidiInput::MidiInput (const String& deviceName, const String& deviceIdentifier)
+    : deviceInfo (deviceName, deviceIdentifier)
 {
 }
 
-MidiInput::~MidiInput()                                                                   {}
-void MidiInput::start()                                                                   {}
-void MidiInput::stop()                                                                    {}
-Array<MidiDeviceInfo> MidiInput::getAvailableDevices()                                    { return {}; }
-MidiDeviceInfo MidiInput::getDefaultDevice()                                              { return {}; }
-std::unique_ptr<MidiInput> MidiInput::openDevice (const String&, MidiInputCallback*)      { return {}; }
-// std::unique_ptr<MidiInput> MidiInput::createNewDevice (const String&, MidiInputCallback*) { return {}; }
-StringArray MidiInput::getDevices()                                                       { return {}; }
-int MidiInput::getDefaultDeviceIndex()                                                    { return 0;}
-std::unique_ptr<MidiInput> MidiInput::openDevice (int, MidiInputCallback*)                { return {}; }
+MidiInput::~MidiInput()
+{
+}
 
-class MidiOutput::Pimpl {};
+void MidiInput::start()
+{
+    if (internal != nullptr)
+    {
+        internal->onMessageReceived = [this](const libremidi::message& msg)
+        {
+            if (internal->callback != nullptr)
+            {
+                if (msg.get_message_type() == libremidi::message_type::SYSTEM_EXCLUSIVE)
+                {
+                    internal->callback->handlePartialSysexMessage (this, msg.bytes.data(), msg.bytes.size(), msg.timestamp);
+                }
+                else
+                {
+                    MidiMessage message (msg.bytes.data(), msg.bytes.size(), msg.timestamp > 0.0 ? msg.timestamp : 0.00000001);
+                    internal->callback->handleIncomingMidiMessage (this, message);
+                }
+            }
+        };
+    }
+}
 
-MidiOutput::~MidiOutput()                                                                 {}
-void MidiOutput::sendMessageNow (const MidiMessage&)                                      {}
-Array<MidiDeviceInfo> MidiOutput::getAvailableDevices()                                   { return {}; }
-MidiDeviceInfo MidiOutput::getDefaultDevice()                                             { return {}; }
-std::unique_ptr<MidiOutput> MidiOutput::openDevice (const String&)                        { return {}; }
-// std::unique_ptr<MidiOutput> MidiOutput::createNewDevice (const String&)                   { return {}; }
-StringArray MidiOutput::getDevices()                                                      { return {}; }
-int MidiOutput::getDefaultDeviceIndex()                                                   { return 0;}
-std::unique_ptr<MidiOutput> MidiOutput::openDevice (int)                                  { return {}; }
+void MidiInput::stop()
+{
+    if (internal != nullptr)
+        internal->onMessageReceived = nullptr;
+}
 
-    // TODO: implement real midi Pimpls
+Array<MidiDeviceInfo> MidiInput::getAvailableDevices()
+{
+    return MidiDeviceObserver::getInstance()->getInputs();
+}
 
-// struct JuceRtMidiContext {
-//     RtMidiIn* rtmidi;
-//     MidiInput* midiIn;
-//     MidiInputCallback* callback{nullptr};
-// };
+MidiDeviceInfo MidiInput::getDefaultDevice()
+{
+    return getAvailableDevices().getFirst();
+}
 
-// //==============================================================================
-// MidiInput::MidiInput (const String& deviceName, const String& deviceID)
-//     : deviceInfo (deviceName, deviceID) {
-//     auto ctx = new JuceRtMidiContext();
-//     ctx->rtmidi = new RtMidiIn();
-//     ctx->midiIn = this;
-//     internal = ctx;
-// }
+std::unique_ptr<MidiInput> MidiInput::openDevice (const String& deviceIdentifier, MidiInputCallback* callback)
+{
+    for (auto& device : getAvailableDevices())
+    {
+        if (device.identifier == deviceIdentifier)
+        {
+            auto midiInput = rawToUniquePtr (new MidiInput (device.name, device.identifier));
+            midiInput->internal = std::make_unique<Pimpl> (device);
+            midiInput->internal->callback = callback;
 
-// MidiInput::~MidiInput() {
-//     delete (RtMidiIn*) internal;
-// }
+            return midiInput;
+        }
+    }
 
-// void MidiInput::start() { }
+    return nullptr;
+}
 
-// void MidiInput::stop() { }
+StringArray MidiInput::getDevices()
+{
+    StringArray deviceNames;
 
-// Array<MidiDeviceInfo> MidiInput::getAvailableDevices() {
-//     Array<MidiDeviceInfo> ret{};
-//     RtMidiIn rtmidi{};
+    for (auto& d : getAvailableDevices())
+        deviceNames.add (d.name);
 
-//     for (int i = 0; i < rtmidi.getPortCount(); i++)
-//         ret.add(MidiDeviceInfo(rtmidi.getPortName(i), String::formatted("MidiIn_%d", i)));
+    return deviceNames;
+}
 
-//     return ret;
-// }
+int MidiInput::getDefaultDeviceIndex()
+{
+    return 0;
+}
 
-// MidiDeviceInfo MidiInput::getDefaultDevice() {
-//     return getAvailableDevices()[getDefaultDeviceIndex()];
-// }
-
-// void rtmidiCallback(double timeStamp, std::vector<unsigned char> *message, void *userData) {
-//     auto ctx = (JuceRtMidiContext*) userData;
-//     auto callback = ctx->callback;
-//     auto midiIn = ctx->midiIn;
-//     const void* data = message->data();
-//     int numBytes = message->size();
-//     // JUCE does not accept zero timestamp value, but RtMidi is supposed to send 0 for the first
-//     // message. To resolve that conflict, we offset 0.0 to slightly positive time.
-//     MidiMessage midiMessage{data, numBytes, timeStamp > 0.0 ? timeStamp : 0.00000001};
-
-//     callback->handleIncomingMidiMessage(midiIn, midiMessage);
-// }
-
-// std::unique_ptr<MidiInput> MidiInput::openDevice (const String& deviceIdentifier, MidiInputCallback* callback) {
-//     RtMidiIn rtmidiStatic{};
-
-//     std::unique_ptr<MidiInput> ret{nullptr};
-//     for (int i = 0; i < rtmidiStatic.getPortCount(); i++)
-//         if (String::formatted("MidiIn_%d", i) == deviceIdentifier) {
-//             ret.reset(new MidiInput(rtmidiStatic.getPortName(i), deviceIdentifier));
-//             auto ctx = (JuceRtMidiContext*) ret->internal;
-//             ctx->callback = callback;
-//             auto rtmidi = ctx->rtmidi;
-//             rtmidi->setCallback(rtmidiCallback, ctx);
-//             rtmidi->openPort(i);
-//             return std::move(ret);
-//         }
-//     jassertfalse;
-//     return nullptr;
-// }
-
-// StringArray MidiInput::getDevices() {
-//     StringArray ret{};
-//     for (auto dev : getAvailableDevices())
-//         ret.add(dev.name);
-//     return {};
-// }
-
-// int MidiInput::getDefaultDeviceIndex() { return 0; }
-
-// std::unique_ptr<MidiInput> MidiInput::openDevice (int index, MidiInputCallback* callback) {
-//     return openDevice(getAvailableDevices()[index].identifier, callback);
-// }
+std::unique_ptr<MidiInput> MidiInput::openDevice (int index, MidiInputCallback* callback)
+{
+    return openDevice (getAvailableDevices()[index].identifier, callback);
+}
 
 // //==============================================================================
 
-// MidiOutput::~MidiOutput() {
-//     delete (RtMidiOut*) internal;
-// }
+class MidiOutput::Pimpl
+{
+public:
+    Pimpl (const MidiDeviceInfo& device)
+    {
+        output = std::make_shared<libremidi::midi_out>();
+        output->open_port (device.identifier.getIntValue(), device.name.toRawUTF8());
+    }
 
-// void MidiOutput::sendMessageNow (const MidiMessage& message) {
-//     ((RtMidiOut *) internal)->sendMessage(message.getRawData(), message.getRawDataSize());
-// }
+    void sendMessage (const MidiMessage& message)
+    {
+        if (output != nullptr)
+            output->send_message (message.getRawData(), message.getRawDataSize());
+    }
 
-// Array<MidiDeviceInfo> MidiOutput::getAvailableDevices() {
-//     Array<MidiDeviceInfo> ret{};
-//     RtMidiOut rtmidi{};
+private:
+    std::shared_ptr<libremidi::midi_out> output;
 
-//     for (int i = 0; i < rtmidi.getPortCount(); i++)
-//         ret.add(MidiDeviceInfo(rtmidi.getPortName(i), String::formatted("MidiOut_%d", i)));
+};
 
-//     return ret;
-// }
+MidiOutput::~MidiOutput() noexcept
+{}
 
-// MidiDeviceInfo MidiOutput::getDefaultDevice() {
-//     return getAvailableDevices()[getDefaultDeviceIndex()];
-// }
+void MidiOutput::sendMessageNow (const MidiMessage& message)
+{
+    internal->sendMessage (message);
+}
 
-// std::unique_ptr<MidiOutput> MidiOutput::openDevice (const String& deviceIdentifier) {
-//     RtMidiOut rtmidi{};
-//     std::unique_ptr<MidiOutput> ret{nullptr};
-//     for (int i = 0; i < rtmidi.getPortCount(); i++) {
-//         if (String::formatted("MidiOut_%d", i) == deviceIdentifier) {
-//             auto midiOut = new MidiOutput(rtmidi.getPortName(i), deviceIdentifier);
-//             ret.reset(midiOut);
-//             midiOut->internal = new RtMidiOut();
-//             ((RtMidiOut *) ret->internal)->openPort(i);
-//             return std::move(ret);
-//         }
-//     }
-//     jassertfalse;
-//     return nullptr;
-// }
+Array<MidiDeviceInfo> MidiOutput::getAvailableDevices()
+{
+    return MidiDeviceObserver::getInstance()->getOutputs();
+}
 
-// StringArray MidiOutput::getDevices() {
-//     StringArray ret{};
-//     for (auto dev : getAvailableDevices())
-//         ret.add(dev.name);
-//     return {};
-// }
-// int MidiOutput::getDefaultDeviceIndex() { return 0; }
+MidiDeviceInfo MidiOutput::getDefaultDevice()
+{
+    return getAvailableDevices().getFirst();
+}
 
-// std::unique_ptr<MidiOutput> MidiOutput::openDevice (int index) {
-//     return openDevice(getAvailableDevices()[index].identifier);
-// }
+std::unique_ptr<MidiOutput> MidiOutput::openDevice (const String& deviceIdentifier)
+{
+    for (auto& device : getAvailableDevices())
+    {
+        if (device.identifier == deviceIdentifier)
+        {
+            auto midiOutput = rawToUniquePtr (new MidiOutput (device.name, device.identifier));
+            midiOutput->internal = std::make_unique<Pimpl> (device);
+
+            return midiOutput;
+        }
+    }
+
+    return nullptr;
+}
+
+StringArray MidiOutput::getDevices()
+{
+    StringArray deviceNames;
+
+    for (auto& d : getAvailableDevices())
+        deviceNames.add (d.name);
+
+    return deviceNames;
+}
+
+ int MidiOutput::getDefaultDeviceIndex()
+ {
+    return 0;
+ }
+
+std::unique_ptr<MidiOutput> MidiOutput::openDevice (int index)
+{
+    return openDevice (getAvailableDevices()[index].identifier);
+}
 
 } // namespace juce

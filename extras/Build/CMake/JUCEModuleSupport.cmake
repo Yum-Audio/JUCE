@@ -545,6 +545,10 @@ function(juce_add_module module_path)
         target_link_libraries(${module_name} INTERFACE oboe)
     endif()
 
+    if((${module_name} STREQUAL "juce_audio_devices") AND EMSCRIPTEN)
+        target_include_directories(${module_name} INTERFACE "${module_path}/native/wasm")
+    endif()
+
     if((${module_name} STREQUAL "juce_opengl") AND (CMAKE_SYSTEM_NAME STREQUAL "Android"))
         set(platform_supports_gl3 0)
 

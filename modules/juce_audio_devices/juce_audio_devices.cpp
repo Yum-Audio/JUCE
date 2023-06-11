@@ -235,6 +235,8 @@ namespace juce
 #elif JUCE_WASM
  #include <emscripten.h>
  #define ASSUME_AL_FLOAT32 1
+ #define LIBREMIDI_HEADER_ONLY 1
+ #define LIBREMIDI_EMSCRIPTEN 1
 
 #if JUCE_OPENAL
  #include <AL/al.h>
