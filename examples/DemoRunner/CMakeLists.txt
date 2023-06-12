@@ -61,8 +61,7 @@ target_compile_definitions(DemoRunner PRIVATE
     JUCE_UNIT_TESTS=1
     JUCE_USE_CAMERA=1
     JUCE_USE_CURL=1
-    JUCE_USE_MP3AUDIOFORMAT=1
-    JUCE_WEB_BROWSER=0)
+    JUCE_USE_MP3AUDIOFORMAT=1)
 
 list(APPEND modules
     juce::juce_audio_utils
@@ -72,10 +71,14 @@ list(APPEND modules
 
 if(NOT EMSCRIPTEN)
     list(APPEND modules
-    juce::juce_analytics
-    juce::juce_video
-    juce::juce_opengl
-    juce::juce_osc
+        juce::juce_analytics
+        juce::juce_video
+        juce::juce_opengl
+        juce::juce_osc
+    )
+
+    target_compile_definitions(DemoRunner PRIVATE
+        JUCE_WEB_BROWSER=1
     )
 endif()
 
