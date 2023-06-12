@@ -88,3 +88,8 @@ target_link_libraries(DemoRunner PRIVATE
 foreach(folder IN ITEMS ../Assets ../Audio ../DSP ../GUI ../Utilities)
     juce_add_bundle_resources_directory(DemoRunner ${folder})
 endforeach()
+
+if (EMSCRIPTEN)
+    # Allow example assets to be accessed from within the demo
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --preload-file ${JUCE_SOURCE_DIR}/examples/@${JUCE_SOURCE_DIR}/examples")
+endif()
