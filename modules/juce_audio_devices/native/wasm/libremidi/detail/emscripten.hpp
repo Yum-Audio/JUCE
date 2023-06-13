@@ -322,22 +322,36 @@ inline void observer_emscripten::update(
     const std::vector<observer_emscripten::device>& current_inputs,
     const std::vector<observer_emscripten::device>& current_outputs)
 {
-  // WebMIDI never remove inputs, it just marks them as disconnected.
-  // At least in known browsers...
-  assert(current_inputs.size() >= m_known_inputs.size());
-  assert(current_outputs.size() >= m_known_outputs.size());
+    auto reportChange = [](const std::vector<webmidi_helpers::device_information>& known_devices,
+                           const std::vector<webmidi_helpers::device_information>& current_devices,
+                           const std::function<void(int, std::string)>& callback)
+    {
+        for(std::size_t i = 0; i < known_devices.size(); i++)
+        {
+            const auto& known = known_devices[i];
+            bool knownFound = false;
+            for (auto& current : current_devices)
+            {
+                if (current.name == known.name)
+                {
+                    knownFound = true;
+                    break;
+                }
+            }
 
-  for(std::size_t i = m_known_inputs.size(); i < current_inputs.size(); i++)
-  {
-    m_known_inputs.push_back(current_inputs[i]);
-    callbacks_.input_added(i, m_known_inputs[i].name);
-  }
+            if (! knownFound)
+                callback (i, known.name);
+        }
+    };
 
-  for(std::size_t i = m_known_outputs.size(); i < current_outputs.size(); i++)
-  {
-    m_known_outputs.push_back(current_outputs[i]);
-    callbacks_.output_added(i, m_known_outputs[i].name);
-  }
+    reportChange (m_known_inputs, current_inputs, callbacks_.input_removed);
+    reportChange (m_known_outputs, current_outputs, callbacks_.output_removed);
+
+    reportChange (current_inputs, m_known_inputs, callbacks_.input_added);
+    reportChange (current_outputs, m_known_outputs, callbacks_.output_added);
+
+    m_known_inputs = current_inputs;
+    m_known_outputs = current_outputs;
 }
 
 /// midi_in ///
