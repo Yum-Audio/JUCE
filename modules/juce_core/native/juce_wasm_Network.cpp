@@ -62,7 +62,7 @@ public:
         emscripten_fetch_attr_init(&attr);
 
         attr.userData = this;
-        strcpy(attr.requestMethod, httpRequestCmd.toRawUTF8());
+        strncpy (attr.requestMethod, httpRequestCmd.c_str(), 32);
         attr.attributes = EMSCRIPTEN_FETCH_REPLACE | EMSCRIPTEN_FETCH_LOAD_TO_MEMORY | EMSCRIPTEN_FETCH_SYNCHRONOUS;
 
         auto fetchHeaders = getStdHeaders (headers);
@@ -135,7 +135,7 @@ public:
             headers << "\r\n";
     }
 
-    void withCustomRequestCommand (const String& customRequestCommand)    { httpRequestCmd = customRequestCommand; }
+    void withCustomRequestCommand (const String& customRequestCommand)    { httpRequestCmd = customRequestCommand.toStdString(); }
     void withConnectionTimeout (int timeoutInMs)                          { timeOutMs = timeoutInMs; }
     void withNumRedirectsToFollow (int maxRedirectsToFollow)              { numRedirectsToFollow = maxRedirectsToFollow; }
     StringPairArray getRequestHeaders() const                             { return WebInputStream::parseHttpHeaders (headers); }
@@ -238,7 +238,7 @@ private:
     const bool addParametersToRequestBody, hasBodyDataToSend;
     int timeOutMs = 0;
     int numRedirectsToFollow = 5;
-    String httpRequestCmd;
+    std::string httpRequestCmd;
     StringPairArray responseHeaders;
     CriticalSection createConnectionLock;
     bool hasBeenCancelled = false;
