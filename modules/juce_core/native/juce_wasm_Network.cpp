@@ -65,6 +65,20 @@ public:
         strncpy (attr.requestMethod, httpRequestCmd.c_str(), 32);
         attr.attributes = EMSCRIPTEN_FETCH_REPLACE | EMSCRIPTEN_FETCH_LOAD_TO_MEMORY | EMSCRIPTEN_FETCH_SYNCHRONOUS;
 
+        if (hasBodyDataToSend)
+        {
+            WebInputStream::createHeadersAndPostData (url,
+                                          headers,
+                                          postData,
+                                          addParametersToRequestBody);
+
+            if (! postData.isEmpty())
+            {
+                attr.requestData = (const char*) postData.getData();
+                attr.requestDataSize = postData.getSize();
+            }
+        }
+
         auto fetchHeaders = getStdHeaders (headers);
 
         if (fetchHeaders.size() > 1)
@@ -85,11 +99,6 @@ public:
                 printf("Downloading.. %.2f%% complete.\n", (fetch->dataOffset + fetch->numBytes) * 100.0 / fetch->totalBytes);
             else
                 printf("Downloading.. %lld bytes complete.\n", fetch->dataOffset + fetch->numBytes);
-
-            auto* thisPimpl = (Pimpl*) fetch->userData;
-
-//            if (thisPimpl->listenerCallback != nullptr)
-//                thisPimpl->listenerCallback->postDataSendProgress (thisPimpl->owner)
         };
 
         attr.onsuccess = [](emscripten_fetch_t *fetch)
