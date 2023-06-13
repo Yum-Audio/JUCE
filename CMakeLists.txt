@@ -29,8 +29,8 @@ include(CMakeDependentOption)
 
 if(EMSCRIPTEN)
     # TODO source map only in debug
-    add_compile_options("-pthread" "-sUSE_FREETYPE=1" "-sUSE_PTHREADS=1" "-gsource-map")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -gsource-map -pthread -s USE_FREETYPE=1 -s PROXY_TO_PTHREAD=1  -lrt -ldl -lpthread -lopenal")
+    add_compile_options("-pthread" "-sUSE_FREETYPE=1" "-sUSE_PTHREADS=1" "-gsource-map" "-sFETCH")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -gsource-map -pthread -s USE_FREETYPE=1 -s PROXY_TO_PTHREAD=1 -s FETCH -lrt -ldl -lpthread -lopenal")
 
     # malloc and free are needed for MIDI implementation
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s EXPORTED_FUNCTIONS=\"['_main', '_malloc', '_free', '_juce_animationFrameCallback', '_juce_mouseCallback', '_juce_keyboardCallback', '_juce_inputCallback']\" -s EXPORTED_RUNTIME_METHODS=\"['cwrap']\"")

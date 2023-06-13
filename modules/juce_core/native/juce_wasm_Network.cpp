@@ -20,6 +20,8 @@
   ==============================================================================
 */
 
+#include <emscripten/fetch.h>
+
 namespace juce
 {
 
@@ -37,27 +39,87 @@ public:
         hasBodyDataToSend (addParametersToRequestBody || url.hasBodyDataToSend()),
         httpRequestCmd (hasBodyDataToSend ? "POST" : "GET")
     {
+        // If an exception is thrown from the user callback, it bubbles up to self.onerror but is otherwise completely
+        // swallowed by xhr.send.
+        EM_ASM({self.onerror = function() {
+            console.log('Got error');
+            HEAP32[$0 >> 2] = 2;
+        };}, &result);
     }
 
     ~Pimpl()
     {
+        cancel();
     }
 
     bool connect (WebInputStream::Listener* webInputListener, [[maybe_unused]] int numRetries = 0)
     {
-        {
-            const ScopedLock lock (createConnectionLock);
-        }
+        const ScopedLock lock (createConnectionLock);
 
-        return false;
+        listenerCallback = webInputListener;
+
+        emscripten_fetch_attr_t attr;
+        emscripten_fetch_attr_init(&attr);
+
+        attr.userData = this;
+        strcpy(attr.requestMethod, httpRequestCmd.toRawUTF8());
+        attr.attributes = EMSCRIPTEN_FETCH_REPLACE | EMSCRIPTEN_FETCH_LOAD_TO_MEMORY | EMSCRIPTEN_FETCH_SYNCHRONOUS;
+
+        auto fetchHeaders = getStdHeaders (headers);
+
+        if (fetchHeaders.size() > 1)
+            attr.requestHeaders = fetchHeaders.data();
+
+        attr.onreadystatechange = [](emscripten_fetch_t *fetch)
+        {
+            if(fetch->readyState != 2)
+                return;
+
+            auto* thisPimpl = (Pimpl*) fetch->userData;
+            thisPimpl->parseFetchHeaders (fetch);
+        };
+
+        attr.onprogress = [](emscripten_fetch_t *fetch)
+        {
+            if (fetch->totalBytes > 0)
+                printf("Downloading.. %.2f%% complete.\n", (fetch->dataOffset + fetch->numBytes) * 100.0 / fetch->totalBytes);
+            else
+                printf("Downloading.. %lld bytes complete.\n", fetch->dataOffset + fetch->numBytes);
+
+            auto* thisPimpl = (Pimpl*) fetch->userData;
+
+//            if (thisPimpl->listenerCallback != nullptr)
+//                thisPimpl->listenerCallback->postDataSendProgress (thisPimpl->owner)
+        };
+
+        attr.onsuccess = [](emscripten_fetch_t *fetch)
+        {
+            auto* thisPimpl = (Pimpl*) fetch->userData;
+            thisPimpl->result = 0;
+
+            thisPimpl->parseFetchHeaders (fetch);
+        };
+
+        attr.onerror = [](emscripten_fetch_t* fetch)
+        {
+            printf("Download failed!\n");
+            auto* thisPimpl = (Pimpl*) fetch->userData;
+            thisPimpl->fetchTask = nullptr;
+        };
+
+        fetchTask = emscripten_fetch (&attr, url.toString (true).toRawUTF8());
+
+        statusCode = fetchTask->status;
+
+        return result != -1;
     }
 
     void cancel()
     {
-        {
-            const ScopedLock lock (createConnectionLock);
-            hasBeenCancelled = true;
-        }
+        const ScopedLock lock (createConnectionLock);
+        emscripten_fetch_close(fetchTask);
+
+        hasBeenCancelled = true;
     }
 
     //==============================================================================
@@ -81,27 +143,92 @@ public:
     int getStatusCode() const                                             { return statusCode; }
 
     //==============================================================================
-    bool isError() const                { return false; }//(connection == nullptr || connection->getHeaders() == nullptr); }
-    int64 getTotalLength()              { return 0; }//connection == nullptr ? -1 : connection->getContentLength(); }
-    bool isExhausted()                  { return finished; }
+    bool isError() const                { return fetchTask == nullptr; }
+    int64 getTotalLength()              { return fetchTask == nullptr ? -1 : fetchTask->numBytes - 1; }
+    bool isExhausted()                  { return position >= getTotalLength(); }
     int64 getPosition()                 { return position; }
 
     int read (void* buffer, int bytesToRead)
     {
         jassert (buffer != nullptr && bytesToRead >= 0);
 
-        if (finished || isError())
+        if (finished || isError() || bytesToRead <= 0 || fetchTask == nullptr)
             return 0;
+
+        const auto readBytes = jmin ((uint64_t) bytesToRead, fetchTask->numBytes - 1);
+        memcpy (buffer, fetchTask->data + position, readBytes);
+        position += readBytes;
+
+        return (int) readBytes;
     }
 
     bool setPosition (int64 wantedPos)
     {
-        return true;
+        if (fetchTask)
+        {
+            if (position < fetchTask->numBytes - 1)
+            {
+                position = (int64) wantedPos;
+                return true;
+            }
+        }
+
+        return false;
     }
 
     int statusCode = 0;
 
 private:
+    static std::vector<const char*> getStdHeaders (const String& headers)
+    {
+        auto allSendHeaders = StringArray::fromLines (headers);
+        allSendHeaders.removeEmptyStrings();
+        std::vector<std::pair<std::string, std::string>> sendHeaders;
+
+        std::vector<const char*> fetchHeaders;
+        for (const auto& headerLine : allSendHeaders)
+        {
+            const auto key = headerLine.upToFirstOccurrenceOf (":", false, false);
+            const auto value = headerLine.fromFirstOccurrenceOf (":", false, false);
+
+            sendHeaders.emplace_back (key.toStdString(), value.toStdString());
+        }
+
+        for (size_t i = 0; i < sendHeaders.size(); i++)
+        {
+            fetchHeaders.push_back (sendHeaders[i].first.c_str());
+            fetchHeaders.push_back (sendHeaders[i].second.c_str());
+        }
+
+        fetchHeaders.push_back (nullptr);
+        return fetchHeaders;
+    }
+
+    void parseFetchHeaders (emscripten_fetch_t* fetch)
+    {
+        responseHeaders.clear();
+
+        size_t headersLengthBytes = emscripten_fetch_get_response_headers_length (fetch) + 1;
+        std::vector<char> headerString;
+        headerString.resize (headersLengthBytes);
+        emscripten_fetch_get_response_headers (fetch, headerString.data(), headersLengthBytes);
+
+        char** unpacked = emscripten_fetch_unpack_response_headers (headerString.data());
+        jassert (unpacked);
+
+        int numHeaders = 0;
+        for(; unpacked[numHeaders * 2]; ++numHeaders)
+        {
+            // Check both the header and its value are present.
+            jassert(unpacked[(numHeaders * 2) + 1]);
+
+            if (unpacked[(numHeaders * 2) + 1])
+                responseHeaders.set (unpacked[numHeaders * 2], unpacked[(numHeaders * 2) + 1]);
+        }
+
+        emscripten_fetch_free_unpacked_response_headers (unpacked);
+    }
+
     WebInputStream& owner;
     URL url;
     String headers;
@@ -115,6 +242,11 @@ private:
     StringPairArray responseHeaders;
     CriticalSection createConnectionLock;
     bool hasBeenCancelled = false;
+
+    int result = -1;
+    emscripten_fetch_t* fetchTask;
+
+    WebInputStream::Listener* listenerCallback;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Pimpl)
 };
