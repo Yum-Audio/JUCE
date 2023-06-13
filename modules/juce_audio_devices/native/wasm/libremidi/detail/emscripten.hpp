@@ -280,7 +280,9 @@ private:
       const id = UTF8ToString($0);
 
       let input = globalThis.__libreMidi_access.inputs.get(id);
-      input.onmidimessage = undefined;
+
+      if (input)
+        input.onmidimessage = undefined;
     , id.c_str()
     );
   }
@@ -328,10 +330,14 @@ inline void observer_emscripten::update(
     {
         for(std::size_t i = 0; i < known_devices.size(); i++)
         {
-            const auto& known = known_devices[i];
+            const auto& known = known_devices.at(i);
             bool knownFound = false;
-            for (auto& current : current_devices)
+            for(std::size_t j = 0; j < current_devices.size(); j++)
             {
+                const auto& current = current_devices.at(j);
+                if (known.name.empty() || current.name.empty())
+                    continue;
+
                 if (current.name == known.name)
                 {
                     knownFound = true;
@@ -339,7 +345,7 @@ inline void observer_emscripten::update(
                 }
             }
 
-            if (! knownFound)
+            if (! knownFound && ! known.name.empty())
                 callback (i, known.name);
         }
     };
@@ -350,8 +356,16 @@ inline void observer_emscripten::update(
     reportChange (current_inputs, m_known_inputs, callbacks_.input_added);
     reportChange (current_outputs, m_known_outputs, callbacks_.output_added);
 
-    m_known_inputs = current_inputs;
-    m_known_outputs = current_outputs;
+    m_known_inputs.clear();
+    m_known_outputs.clear();
+
+    for (auto& current : current_inputs)
+        if (! current.name.empty())
+            m_known_inputs.push_back(current);
+
+    for (auto& current : current_outputs)
+        if (! current.name.empty())
+            m_known_outputs.push_back(current);
 }
 
 /// midi_in ///
