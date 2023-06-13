@@ -1736,6 +1736,36 @@ function(_juce_initialise_target target)
     _juce_write_generate_time_info(${target})
     _juce_link_optional_libraries(${target})
     _juce_fixup_module_source_groups()
+
+    if (EMSCRIPTEN)
+        get_target_property(juce_kind_string ${target} JUCE_TARGET_KIND_STRING)
+        get_target_property(juce_is_plugin ${target} JUCE_IS_PLUGIN)
+
+        # malloc and free are needed for MIDI implementation
+        list(APPEND export_functions '_main' '_malloc' '_free')
+
+        if (NOT (${juce_kind_string} STREQUAL juce_kind_string-NOTFOUND AND ${juce_is_plugin} STREQUAL juce_is_plugin-NOTFOUND))
+            # has GUI so needs GUI related functions and fonts
+            list(APPEND export_functions '_juce_animationFrameCallback' '_juce_mouseCallback' '_juce_keyboardCallback' '_juce_inputCallback')
+
+            # Bundle fonts - local path @ emscripten path
+            # emscripten path is the default path searched by juce in juce_linux_Fonts
+            target_link_options(${target} PRIVATE --preload-file /opt/X11/share/fonts/@/usr/X11R6/lib/X11/fonts)
+        endif()
+
+        list(JOIN export_functions "," all_export_functions)
+        get_target_property(existing_link_options ${target} LINK_OPTIONS)
+
+        set(link_options -sEXPORTED_FUNCTIONS=[${all_export_functions}] -sEXPORTED_RUNTIME_METHODS=['cwrap'])
+
+        if (NOT existing_link_options STREQUAL existing_link_options-NOTFOUND)
+            # Append the new link options to the retrieved value
+            set(link_options ${existing_link_options} ${link_options})
+        endif()
+
+        target_link_options(${target} PRIVATE ${link_options})
+    endif()
+
 endfunction()
 
 # ==================================================================================================
@@ -1759,9 +1789,9 @@ function(juce_add_gui_app target)
     endif()
 
     target_compile_definitions(${target} PRIVATE JUCE_STANDALONE_APPLICATION=1)
+    set_target_properties(${target} PROPERTIES JUCE_TARGET_KIND_STRING "App")
     _juce_initialise_target(${target} ${ARGN})
     _juce_set_output_name(${target} $<TARGET_PROPERTY:${target},JUCE_PRODUCT_NAME>)
-    set_target_properties(${target} PROPERTIES JUCE_TARGET_KIND_STRING "App")
     _juce_configure_bundle(${target} ${target})
     _juce_configure_app_bundle(${target} ${target})
 endfunction()

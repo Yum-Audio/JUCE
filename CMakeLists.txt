@@ -32,13 +32,6 @@ if(EMSCRIPTEN)
     add_compile_options("-pthread" "-sUSE_FREETYPE=1" "-sUSE_PTHREADS=1" "-gsource-map" "-sFETCH")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -gsource-map -pthread -s USE_FREETYPE=1 -s PROXY_TO_PTHREAD=1 -s FETCH -lrt -ldl -lpthread -lopenal")
 
-    # malloc and free are needed for MIDI implementation
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s EXPORTED_FUNCTIONS=\"['_main', '_malloc', '_free', '_juce_animationFrameCallback', '_juce_mouseCallback', '_juce_keyboardCallback', '_juce_inputCallback']\" -s EXPORTED_RUNTIME_METHODS=\"['cwrap']\"")
-
-    # Bundle fonts - local path @ emscripten path
-    # emscripten path is the default path searched by juce in juce_linux_Fonts
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --preload-file /opt/X11/share/fonts/@/usr/X11R6/lib/X11/fonts")
-
     # Make emscripten output the .html file
     set(CMAKE_EXECUTABLE_SUFFIX ".html")
 
