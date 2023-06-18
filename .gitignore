@@ -52,17 +52,18 @@ profile
 **/Builds/Android/app/.cxx
 **/Builds/Android/lib/build
 **/Builds/Android/lib/.externalNativeBuild
-**/Builds/CLion/cmake-build-*
-**/Builds/CLion/.idea
 **/Builds/MacOSX/**/Index
 **/Builds/MacOSX/**/Intermediates.noindex
 **/doxygen/doc
 **/doxygen/build
 **/.idea
 extras/Projucer/JUCECompileEngine.dylib
+extras/Projucer/cmakebuild/**
 
 .idea
 **/cmake-build*
 
 .vscode
 /build
+
+CMakeUserPresets.json

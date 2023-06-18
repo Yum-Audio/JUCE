@@ -2,7 +2,7 @@
   ==============================================================================
 
    This file is part of the JUCE library.
-   Copyright (c) 2020 - Raw Material Software Limited
+   Copyright (c) 2022 - Raw Material Software Limited
 
    JUCE is an open source library subject to commercial or open-source
    licensing.
@@ -71,7 +71,7 @@ class InterprocessConnection::SafeAction : public SafeActionImpl
 };
 
 //==============================================================================
-InterprocessConnection::InterprocessConnection (bool callbacksOnMessageThread, int threadPrio, uint32 magicMessageHeaderNumber)
+InterprocessConnection::InterprocessConnection (bool callbacksOnMessageThread, Thread::Priority threadPrio, uint32 magicMessageHeaderNumber)
     : useMessageThread (callbacksOnMessageThread),
       magicMessageHeader (magicMessageHeaderNumber),
       safeAction (std::make_shared<SafeAction> (*this)),

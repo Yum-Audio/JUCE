@@ -2,7 +2,7 @@
   ==============================================================================
 
    This file is part of the JUCE library.
-   Copyright (c) 2020 - Raw Material Software Limited
+   Copyright (c) 2022 - Raw Material Software Limited
 
    JUCE is an open source library subject to commercial or open-source
    licensing.
@@ -288,12 +288,16 @@ private:
     {
         if (! result)
         {
+#if JUCE_MAC
             if (failureMessage.isNotEmpty())
                 failureMessage << " -- ";
 
             failureMessage << "Expected value" << (compDescription.isEmpty() ? "" : " ")
                            << compDescription << ": " << valueToCompareTo
                            << ", Actual value: " << value;
+            //why is this throwing a compiler error on windows...
+            
+#endif
         }
 
         expect (result, failureMessage);

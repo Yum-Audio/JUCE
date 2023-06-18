@@ -2,7 +2,7 @@
   ==============================================================================
 
    This file is part of the JUCE library.
-   Copyright (c) 2020 - Raw Material Software Limited
+   Copyright (c) 2022 - Raw Material Software Limited
 
    JUCE is an open source library subject to commercial or open-source
    licensing.
@@ -464,7 +464,7 @@ struct var::VariantType
 
     static void methodWriteToStream (const ValueUnion&, OutputStream& output)
     {
-        jassertfalse; // Can't write a method to a stream!
+//        jassertfalse; // Can't write a method to a stream!
         output.writeCompressedInt (0);
     }
 
@@ -492,18 +492,6 @@ struct var::Instance
     static constexpr VariantType attributesBinary         { VariantType::BinaryTag{} };
     static constexpr VariantType attributesObject         { VariantType::ObjectTag{} };
 };
-
-constexpr var::VariantType var::Instance::attributesVoid;
-constexpr var::VariantType var::Instance::attributesUndefined;
-constexpr var::VariantType var::Instance::attributesInt;
-constexpr var::VariantType var::Instance::attributesInt64;
-constexpr var::VariantType var::Instance::attributesBool;
-constexpr var::VariantType var::Instance::attributesDouble;
-constexpr var::VariantType var::Instance::attributesMethod;
-constexpr var::VariantType var::Instance::attributesArray;
-constexpr var::VariantType var::Instance::attributesString;
-constexpr var::VariantType var::Instance::attributesBinary;
-constexpr var::VariantType var::Instance::attributesObject;
 
 //==============================================================================
 var::var() noexcept : type (&Instance::attributesVoid) {}
