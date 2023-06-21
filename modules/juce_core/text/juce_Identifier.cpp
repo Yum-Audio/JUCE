@@ -61,7 +61,7 @@ Identifier& Identifier::operator= (const Identifier& other) noexcept
 Identifier::Identifier (const String& nm)
 :
 Identifier (nm.upToFirstOccurrenceOf (FlagIdentifier, false, false),
-            nm.fromLastOccurrenceOf (FlagIdentifier, false, false).getTrailingIntValue())
+            nm.contains (FlagIdentifier) ? nm.fromLastOccurrenceOf (FlagIdentifier, false, false).getTrailingIntValue() : 0)
 {
     // An Identifier cannot be created from an empty string!
     jassert (nm.isNotEmpty());
