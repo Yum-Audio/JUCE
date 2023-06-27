@@ -240,7 +240,12 @@ public:
         @returns a reference to the value tree, so that you can daisy-chain calls to this method.
     */
     ValueTree& setProperty (const Identifier& name, const var& newValue, UndoManager* undoManager);
-
+    
+    /** Changes a named property of the tree without calling any listeners
+        @returns true if the property has been changed
+     */
+    bool setPropertySiltently (const Identifier& name, const var& newValue, UndoManager* undoManager);
+    
     /** Returns true if the tree contains a named property. */
     bool hasProperty (const Identifier& name) const noexcept;
 

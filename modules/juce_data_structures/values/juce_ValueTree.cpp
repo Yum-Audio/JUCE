@@ -152,6 +152,18 @@ public:
             }
         }
     }
+    
+    /** returns true if property changed but will not call any listeners
+     */
+    bool setPropertySilently (const Identifier& name, const var& newValue, UndoManager* undoManager)
+    {
+        if (undoManager == nullptr)
+            return properties.set (name, newValue);
+        
+        // not implemented for any undomanagers so far
+        jassertfalse;
+        return false;
+    }
 
     bool hasProperty (const Identifier& name) const noexcept
     {
@@ -761,6 +773,14 @@ const var* ValueTree::getPropertyPointer (const Identifier& name) const noexcept
 ValueTree& ValueTree::setProperty (const Identifier& name, const var& newValue, UndoManager* undoManager)
 {
     return setPropertyExcludingListener (nullptr, name, newValue, undoManager);
+}
+
+bool ValueTree::setPropertySiltently (const Identifier& name, const var& newValue, UndoManager* undoManager)
+{
+    if (object != nullptr)
+        return object->setPropertySilently(name, newValue, undoManager);
+    
+    return false;
 }
 
 ValueTree& ValueTree::setPropertyExcludingListener (Listener* listenerToExclude, const Identifier& name,
