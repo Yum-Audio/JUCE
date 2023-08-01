@@ -175,13 +175,13 @@ bool Process::openDocument (const String& fileName, const String& parameters)
     return true;
 }
 
-//void File::revealToUser() const
-//{
+void File::revealToUser() const
+{
 //    if (isDirectory())
 //        startAsProcess();
 //    else if (getParentDirectory().exists())
 //        getParentDirectory().startAsProcess();
-//}
+}
 
 bool File::copyInternal (const File& dest) const
 {

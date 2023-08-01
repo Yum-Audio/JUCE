@@ -25,6 +25,24 @@
 namespace juce
 {
 
+StreamingSocket::StreamingSocket() {}
+StreamingSocket::~StreamingSocket() {}
+void StreamingSocket::close() {}
+int StreamingSocket::write(void const*, int) { return 0; }
+int StreamingSocket::read(void*, int, bool) { return 0; }
+int StreamingSocket::waitUntilReady (bool, int) { return 0; }
+bool StreamingSocket::connect(juce::String const&, int, int) { return false; }
+
+NamedPipe::~NamedPipe() {}
+void NamedPipe::close() {}
+bool NamedPipe::isOpen() const { return false; }
+int NamedPipe::write(void const*, int, int) { return 0; }
+int NamedPipe::read(void*, int, int) { return 0; }
+
+class NamedPipe::Pimpl
+{
+};
+
 void MACAddress::findAllAddresses(Array<MACAddress>&)
 {
 }
