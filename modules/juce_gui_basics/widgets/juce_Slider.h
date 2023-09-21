@@ -869,11 +869,18 @@ public:
         trackColourId               = 0x1001310,  /**< The colour to draw the groove that the thumb moves along. */
         rotarySliderFillColourId    = 0x1001311,  /**< For rotary sliders, this colour fills the outer curve. */
         rotarySliderOutlineColourId = 0x1001312,  /**< For rotary sliders, this colour is used to draw the outer curve's outline. */
+        
+        linearFillColourId          = 0x1001320,  /**< Custom colour to fill linear sliders */
+        linearFillColourAId         = 0x1001321,  /**< Custom colour to fill sliders part to the first knob */
+        linearFillColourBId         = 0x1001322,  /**< Custom colour to fill sliders part between first and second knob */
+        linearFillColourCId          = 0x1001323,  /**< Custom colour to fill sliders from second knob on */
+        linearOutlineColourId       = 0x1001324,  /**< Custom colour to outline linear sliders */
 
         textBoxTextColourId         = 0x1001400,  /**< The colour for the text in the text-editor box used for editing the value. */
         textBoxBackgroundColourId   = 0x1001500,  /**< The background colour for the text-editor box. */
         textBoxHighlightColourId    = 0x1001600,  /**< The text highlight colour for the text-editor box. */
         textBoxOutlineColourId      = 0x1001700   /**< The colour to use for a border around the text-editor box. */
+        
     };
 
     //==============================================================================
