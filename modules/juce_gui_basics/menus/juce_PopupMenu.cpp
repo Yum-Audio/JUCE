@@ -2388,4 +2388,9 @@ PopupMenu::Options juce::PopupMenu::Options::withItemTextJustification(const Jus
     return o;
 }
 
+PopupMenu::Options PopupMenu::Options::withTickBoxesVisible(bool enabled) const
+{
+    auto o = with (*this, &Options::tickBoxesVisible, enabled);
+    return o;
+}
 } // namespace juce
