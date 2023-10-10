@@ -2119,6 +2119,10 @@ int PopupMenu::showWithOptionalCallback (const Options& options,
     std::unique_ptr<ModalComponentManager::Callback> userCallbackDeleter (userCallback);
     std::unique_ptr<PopupMenuCompletionCallback> callback (new PopupMenuCompletionCallback());
 
+    if (! lookAndFeel.get())
+        if (auto parent = options.getParentComponent ())
+            setLookAndFeel (&parent->getLookAndFeel ());
+    
     if (auto* window = createWindow (options, &(callback->managerOfChosenCommand)))
     {
         callback->component.reset (window);
@@ -2273,6 +2277,11 @@ bool PopupMenu::containsAnyActiveItems() const noexcept
 void PopupMenu::setLookAndFeel (LookAndFeel* const newLookAndFeel)
 {
     lookAndFeel = newLookAndFeel;
+}
+
+LookAndFeel * PopupMenu::getLookAndFeel ()
+{
+    return lookAndFeel.get ();
 }
 
 void PopupMenu::setItem (CustomComponent& c, const Item* itemToUse)

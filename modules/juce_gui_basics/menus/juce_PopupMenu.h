@@ -760,6 +760,8 @@ public:
     */
     void setLookAndFeel (LookAndFeel* newLookAndFeel);
 
+    LookAndFeel* getLookAndFeel ();
+
     //==============================================================================
     /** A set of colour IDs to use to change the colour of various aspects of the menu.
 
