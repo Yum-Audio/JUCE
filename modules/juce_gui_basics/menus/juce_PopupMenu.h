@@ -128,7 +128,10 @@ public:
 
         /** The menu item's name. */
         String text;
-
+        
+        /** custom text you might want to display in some combobox, when empty, text will be displayed */
+        String textWhenSelected;
+        
         /** The menu item's ID.
             This must not be 0 if you want the item to be triggerable, but if you're attaching
             an action callback to the item, you can set the itemID to -1 to indicate that it

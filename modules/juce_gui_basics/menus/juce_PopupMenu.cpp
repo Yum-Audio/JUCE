@@ -1644,6 +1644,7 @@ PopupMenu::Item& PopupMenu::Item::operator= (Item&&) = default;
 
 PopupMenu::Item::Item (const Item& other)
   : text (other.text),
+    textWhenSelected (other.textWhenSelected),
     itemID (other.itemID),
     action (other.action),
     subMenu (createCopyIfNotNull (other.subMenu.get())),
@@ -1663,6 +1664,7 @@ PopupMenu::Item::Item (const Item& other)
 PopupMenu::Item& PopupMenu::Item::operator= (const Item& other)
 {
     text = other.text;
+    textWhenSelected = other.textWhenSelected;
     itemID = other.itemID;
     action = other.action;
     subMenu.reset (createCopyIfNotNull (other.subMenu.get()));

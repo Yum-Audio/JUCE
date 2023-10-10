@@ -250,7 +250,7 @@ void ComboBox::setSelectedItemIndex (const int index, const NotificationType not
 int ComboBox::getSelectedId() const noexcept
 {
     if (auto* item = getItemForId (currentId.getValue()))
-        if (getText() == item->text)
+        if (auto text = getText(); text == item->text || text == item->textWhenSelected)
             return item->itemID;
 
     return 0;
@@ -259,7 +259,7 @@ int ComboBox::getSelectedId() const noexcept
 void ComboBox::setSelectedId (const int newItemId, const NotificationType notification)
 {
     auto* item = getItemForId (newItemId);
-    auto newItemText = item != nullptr ? item->text : String();
+    auto newItemText = item != nullptr ? (item->textWhenSelected.isEmpty () ? item->text : item->textWhenSelected) : String();
 
     if (lastCurrentId != newItemId || label->getText() != newItemText)
     {
