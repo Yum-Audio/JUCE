@@ -2120,8 +2120,12 @@ int PopupMenu::showWithOptionalCallback (const Options& options,
     std::unique_ptr<PopupMenuCompletionCallback> callback (new PopupMenuCompletionCallback());
 
     if (! lookAndFeel.get())
+    {
         if (auto parent = options.getParentComponent ())
             setLookAndFeel (&parent->getLookAndFeel ());
+        else if (auto target = options.getTargetComponent ())
+            setLookAndFeel (&target->getLookAndFeel ());
+    }
     
     if (auto* window = createWindow (options, &(callback->managerOfChosenCommand)))
     {
