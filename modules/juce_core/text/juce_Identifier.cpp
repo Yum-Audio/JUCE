@@ -26,38 +26,68 @@ namespace juce
 Identifier::Identifier() noexcept {}
 Identifier::~Identifier() noexcept {}
 
-Identifier::Identifier (const Identifier& other) noexcept  : name (other.name) {}
+Identifier::Identifier (const Identifier& other) noexcept  
+:
+name (other.name),
+value (other.value),
+flags (other.flags)
+ {}
 
-Identifier::Identifier (Identifier&& other) noexcept : name (std::move (other.name)) {}
+Identifier::Identifier (Identifier&& other) noexcept 
+:
+name (std::move (other.name)),
+value (std::move (other.value)),
+flags (other.flags)
+{}
 
 Identifier& Identifier::operator= (Identifier&& other) noexcept
 {
     name = std::move (other.name);
+    value = std::move (other.value);
+    flags = other.flags;
+
     return *this;
 }
 
 Identifier& Identifier::operator= (const Identifier& other) noexcept
 {
     name = other.name;
+    value = other.value;
+    flags = other.flags;
+    
     return *this;
 }
 
 Identifier::Identifier (const String& nm)
-    : name (StringPool::getGlobalPool().getPooledString (nm))
+:
+Identifier (nm.upToFirstOccurrenceOf (FlagIdentifier, false, false),
+            nm.contains (FlagIdentifier) ? nm.fromLastOccurrenceOf (FlagIdentifier, false, false).getTrailingIntValue() : 0)
+{
+    // An Identifier cannot be created from an empty string!
+    jassert (nm.isNotEmpty());
+}
+
+Identifier::Identifier (const String& nm, int customFlags)
+:
+name (StringPool::getGlobalPool().getPooledString (nm)),
+value (StringPool::getGlobalPool().getPooledString (name + createFlagString (customFlags))),
+flags (customFlags)
 {
     // An Identifier cannot be created from an empty string!
     jassert (nm.isNotEmpty());
 }
 
 Identifier::Identifier (const char* nm)
-    : name (StringPool::getGlobalPool().getPooledString (nm))
+:
+Identifier (String (nm))
 {
     // An Identifier cannot be created from an empty string!
     jassert (nm != nullptr && nm[0] != 0);
 }
 
 Identifier::Identifier (String::CharPointerType start, String::CharPointerType end)
-    : name (StringPool::getGlobalPool().getPooledString (start, end))
+:
+Identifier (String (start, end))
 {
     // An Identifier cannot be created from an empty string!
     jassert (start < end);
@@ -70,5 +100,29 @@ bool Identifier::isValidIdentifier (const String& possibleIdentifier) noexcept
     return possibleIdentifier.isNotEmpty()
             && possibleIdentifier.containsOnly ("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-:#@$%");
 }
+
+bool Identifier::isExcludedFromFile () const noexcept
+{
+    return (getFlags () & ExcludeFromFile) == ExcludeFromFile;
+}
+
+bool Identifier::isExcludedFromApplying () const noexcept
+{
+    return (getFlags () & DontApplyToCpies) == DontApplyToCpies;
+}
+
+int Identifier::getFlags () const
+{
+    return flags;
+}
+
+String Identifier::createFlagString (int flags)
+{
+    if (flags == None)
+        return "";
+    
+    return FlagIdentifier + (String)flags;
+}
+
 
 } // namespace juce

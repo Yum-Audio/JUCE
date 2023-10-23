@@ -429,6 +429,8 @@ public:
     [[deprecated]] void setText (const String&, bool);
    #endif
 
+    PopupMenu::Item* getItemForId (int) const noexcept;
+    PopupMenu::Item* getItemForIndex (int) const noexcept;
 private:
     //==============================================================================
     enum EditableState
@@ -449,8 +451,6 @@ private:
     EditableState labelEditableState = editableUnknown;
 
     std::unique_ptr<AccessibilityHandler> createAccessibilityHandler() override;
-    PopupMenu::Item* getItemForId (int) const noexcept;
-    PopupMenu::Item* getItemForIndex (int) const noexcept;
     bool selectIfEnabled (int index);
     bool nudgeSelectedItem (int delta);
     void sendChange (NotificationType);

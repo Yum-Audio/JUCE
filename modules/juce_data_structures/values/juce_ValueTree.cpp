@@ -152,6 +152,18 @@ public:
             }
         }
     }
+    
+    /** returns true if property changed but will not call any listeners
+     */
+    bool setPropertySilently (const Identifier& name, const var& newValue, UndoManager* undoManager)
+    {
+        if (undoManager == nullptr)
+            return properties.set (name, newValue);
+        
+        // not implemented for any undomanagers so far
+        jassertfalse;
+        return false;
+    }
 
     bool hasProperty (const Identifier& name) const noexcept
     {
@@ -244,7 +256,7 @@ public:
         return children.indexOf (child.object);
     }
 
-    void addChild (SharedObject* child, int index, UndoManager* undoManager)
+    void addChild (SharedObject* child, int index, UndoManager* undoManager, bool sendChangeMessages = true)
     {
         if (child != nullptr && child->parent != this)
         {
@@ -265,14 +277,20 @@ public:
                 {
                     children.insert (index, child);
                     child->parent = this;
-                    sendChildAddedMessage (ValueTree (*child));
-                    child->sendParentChangeMessage();
+                    
+                    if (sendChangeMessages)
+                    {
+                        sendChildAddedMessage (ValueTree (*child));
+                        child->sendParentChangeMessage();
+                    }
                 }
                 else
                 {
                     if (! isPositiveAndBelow (index, children.size()))
                         index = children.size();
 
+                    // it's not clear how this would with an undomanager....
+                    jassert (sendChangeMessages);
                     undoManager->perform (new AddOrRemoveChildAction (*this, index, child));
                 }
             }
@@ -284,8 +302,13 @@ public:
             }
         }
     }
+    
+    void addChildSilently (SharedObject * child, int index, UndoManager* undoManager)
+    {
+        addChild (child, index, undoManager, false);
+    }
 
-    void removeChild (int childIndex, UndoManager* undoManager)
+    void removeChild (int childIndex, UndoManager* undoManager, bool sendChangeMessages = true)
     {
         if (auto child = Ptr (children.getObjectPointer (childIndex)))
         {
@@ -293,16 +316,27 @@ public:
             {
                 children.remove (childIndex);
                 child->parent = nullptr;
-                sendChildRemovedMessage (ValueTree (child), childIndex);
-                child->sendParentChangeMessage();
+                
+                if (sendChangeMessages)
+                {
+                    sendChildRemovedMessage (ValueTree (child), childIndex);
+                    child->sendParentChangeMessage();
+                }
             }
             else
             {
+                // it's not clear how this would with an undomanager....
+                jassert (sendChangeMessages);
                 undoManager->perform (new AddOrRemoveChildAction (*this, childIndex, {}));
             }
         }
     }
 
+    void removeChildSilently (int childIndex, UndoManager* undoManager)
+    {
+        removeChild (childIndex, undoManager, false);
+    }
+    
     void removeAllChildren (UndoManager* undoManager)
     {
         while (children.size() > 0)
@@ -763,6 +797,14 @@ ValueTree& ValueTree::setProperty (const Identifier& name, const var& newValue, 
     return setPropertyExcludingListener (nullptr, name, newValue, undoManager);
 }
 
+bool ValueTree::setPropertySiltently (const Identifier& name, const var& newValue, UndoManager* undoManager)
+{
+    if (object != nullptr)
+        return object->setPropertySilently(name, newValue, undoManager);
+    
+    return false;
+}
+
 ValueTree& ValueTree::setPropertyExcludingListener (Listener* listenerToExclude, const Identifier& name,
                                                     const var& newValue, UndoManager* undoManager)
 {
@@ -924,6 +966,30 @@ void ValueTree::addChild (const ValueTree& child, int index, UndoManager* undoMa
 void ValueTree::appendChild (const ValueTree& child, UndoManager* undoManager)
 {
     addChild (child, -1, undoManager);
+}
+
+void ValueTree::addChildSilently(const ValueTree &child, int index, UndoManager *undoManager)
+{
+    jassert (object != nullptr); // Trying to add a child to a null ValueTree!
+    
+    if (object != nullptr)
+        object->addChildSilently (child.object.get(), index, undoManager);
+}
+
+void ValueTree::removeChildSilently(const ValueTree& child, UndoManager *undoManager)
+{
+    jassert (object != nullptr); // Trying to remove a child from a null ValueTree!
+    
+    if (object != nullptr)
+        object->removeChildSilently (object->children.indexOf(child.object), undoManager);
+}
+
+void ValueTree::removeChildSilently(int index, UndoManager *undoManager)
+{
+    jassert (object != nullptr); // Trying to remove a child from a null ValueTree!
+    
+    if (object != nullptr)
+        object->removeChildSilently (index, undoManager);
 }
 
 void ValueTree::removeChild (int childIndex, UndoManager* undoManager)

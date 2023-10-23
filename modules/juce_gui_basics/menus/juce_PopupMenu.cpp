@@ -1644,6 +1644,7 @@ PopupMenu::Item& PopupMenu::Item::operator= (Item&&) = default;
 
 PopupMenu::Item::Item (const Item& other)
   : text (other.text),
+    textWhenSelected (other.textWhenSelected),
     itemID (other.itemID),
     action (other.action),
     subMenu (createCopyIfNotNull (other.subMenu.get())),
@@ -1663,6 +1664,7 @@ PopupMenu::Item::Item (const Item& other)
 PopupMenu::Item& PopupMenu::Item::operator= (const Item& other)
 {
     text = other.text;
+    textWhenSelected = other.textWhenSelected;
     itemID = other.itemID;
     action = other.action;
     subMenu.reset (createCopyIfNotNull (other.subMenu.get()));
@@ -2117,6 +2119,14 @@ int PopupMenu::showWithOptionalCallback (const Options& options,
     std::unique_ptr<ModalComponentManager::Callback> userCallbackDeleter (userCallback);
     std::unique_ptr<PopupMenuCompletionCallback> callback (new PopupMenuCompletionCallback());
 
+    if (! lookAndFeel.get())
+    {
+        if (auto parent = options.getParentComponent ())
+            setLookAndFeel (&parent->getLookAndFeel ());
+        else if (auto target = options.getTargetComponent ())
+            setLookAndFeel (&target->getLookAndFeel ());
+    }
+    
     if (auto* window = createWindow (options, &(callback->managerOfChosenCommand)))
     {
         callback->component.reset (window);
@@ -2273,6 +2283,11 @@ void PopupMenu::setLookAndFeel (LookAndFeel* const newLookAndFeel)
     lookAndFeel = newLookAndFeel;
 }
 
+LookAndFeel * PopupMenu::getLookAndFeel ()
+{
+    return lookAndFeel.get ();
+}
+
 void PopupMenu::setItem (CustomComponent& c, const Item* itemToUse)
 {
     c.item = itemToUse;
@@ -2382,4 +2397,15 @@ void PopupMenu::LookAndFeelMethods::getIdealPopupMenuItemSize (const String&, bo
 
 int PopupMenu::LookAndFeelMethods::getPopupMenuBorderSize() { return 0; }
 
+PopupMenu::Options juce::PopupMenu::Options::withItemTextJustification(const Justification &type) const
+{
+    auto o = with (*this, &Options::justificationFlags, type.getFlags ());
+    return o;
+}
+
+PopupMenu::Options PopupMenu::Options::withTickBoxesVisible(bool enabled) const
+{
+    auto o = with (*this, &Options::tickBoxesVisible, enabled);
+    return o;
+}
 } // namespace juce

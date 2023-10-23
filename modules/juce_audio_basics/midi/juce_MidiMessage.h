@@ -479,6 +479,10 @@ public:
     */
     int getControllerValue() const noexcept;
 
+    /** CustomJUCE method
+    */
+    void setControllerValue (int newValue) noexcept;
+
     /** Returns true if this message is a controller message and if it has the specified
         controller type.
     */

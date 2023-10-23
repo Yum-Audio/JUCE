@@ -54,6 +54,14 @@ public:
     Identifier (const String& name);
 
     /** Creates an identifier with a specified name.
+     Because this name may need to be used in contexts such as script variables or XML
+     tags, it must only contain ascii letters and digits, or the underscore character.
+     
+     if you set writeToFile to false the name will be extended with _exclude. This is a custom extension to exclude Identifiers when writing valuetrees to disk.
+     */
+    explicit Identifier (const String& name, int customFlags);
+
+    /** Creates an identifier with a specified name.
         Because this name may need to be used in contexts such as script variables or XML
         tags, it must only contain ascii letters and digits, or the underscore character.
     */
@@ -99,16 +107,16 @@ public:
     inline bool operator>= (StringRef other) const noexcept             { return name >= other; }
 
     /** Returns this identifier as a string. */
-    const String& toString() const noexcept                             { return name; }
+    const String& toString() const noexcept                             { return value; }
 
     /** Returns this identifier's raw string pointer. */
-    operator String::CharPointerType() const noexcept                   { return name.getCharPointer(); }
+    operator String::CharPointerType() const noexcept                   { return value.getCharPointer(); }
 
     /** Returns this identifier's raw string pointer. */
-    String::CharPointerType getCharPointer() const noexcept             { return name.getCharPointer(); }
+    String::CharPointerType getCharPointer() const noexcept             { return value.getCharPointer(); }
 
     /** Returns this identifier as a StringRef. */
-    operator StringRef() const noexcept                                 { return name; }
+    operator StringRef() const noexcept                                 { return value; }
 
     /** Returns true if this Identifier is not null */
     bool isValid() const noexcept                                       { return name.isNotEmpty(); }
@@ -116,17 +124,38 @@ public:
     /** Returns true if this Identifier is null */
     bool isNull() const noexcept                                        { return name.isEmpty(); }
 
+    /** Returns false if the identifier is excluded from file */
+    bool isExcludedFromFile () const noexcept;
+    
+    bool isExcludedFromApplying () const noexcept;
+    
     /** A null identifier. */
     static Identifier null;
 
+    enum Flags
+    {
+        None = 0,
+        ExcludeFromFile = 1,
+        DontApplyToCpies = 2,
+        All = ~None
+    };
+    
     /** Checks a given string for characters that might not be valid in an Identifier.
         Since Identifiers are used as a script variables and XML attributes, they should only contain
         alphanumeric characters, underscores, or the '-' and ':' characters.
     */
     static bool isValidIdentifier (const String& possibleIdentifier) noexcept;
-
+    
+    int getFlags () const;
+    
 private:
-    String name;
+    String name; // the name without flags
+    String value; // the name including flagIdentifier and flags
+    int flags; // ...
+    
+    static String createFlagString (int flags);
+    
+    const static inline String FlagIdentifier{ "__flag_" };
 };
 
 } // namespace juce

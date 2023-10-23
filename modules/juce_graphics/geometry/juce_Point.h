@@ -242,6 +242,10 @@ public:
     /** Returns the point as a string in the form "x, y". */
     String toString() const                                       { return String (x) + ", " + String (y); }
 
+    /** Custom method so Point works with UnitTests and expectEquals */
+    operator String() const                                       { return toString(); }
+
+    
     //==============================================================================
     ValueType x{}; /**< The point's X coordinate. */
     ValueType y{}; /**< The point's Y coordinate. */

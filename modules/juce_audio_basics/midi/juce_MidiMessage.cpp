@@ -583,6 +583,12 @@ int MidiMessage::getControllerValue() const noexcept
     return getRawData()[2];
 }
 
+void MidiMessage::setControllerValue(int newValue) noexcept
+{
+    jassert (isController());
+    getData()[2] = (uint8) (newValue & 127);
+}
+
 MidiMessage MidiMessage::controllerEvent (const int channel, const int controllerType, const int value) noexcept
 {
     // the channel must be between 1 and 16 inclusive

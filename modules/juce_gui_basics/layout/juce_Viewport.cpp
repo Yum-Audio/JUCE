@@ -565,6 +565,9 @@ static int rescaleMouseWheelDistance (float distance, int singleStepSize) noexce
 
 bool Viewport::useMouseWheelMoveIfNeeded (const MouseEvent& e, const MouseWheelDetails& wheel)
 {
+    if (! isParentOf (e.originalComponent))
+        return false;
+    
     if (! (e.mods.isAltDown() || e.mods.isCtrlDown() || e.mods.isCommandDown()))
     {
         const bool canScrollVert = (allowScrollingWithoutScrollbarV || getVerticalScrollBar().isVisible());

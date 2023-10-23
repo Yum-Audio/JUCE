@@ -240,7 +240,12 @@ public:
         @returns a reference to the value tree, so that you can daisy-chain calls to this method.
     */
     ValueTree& setProperty (const Identifier& name, const var& newValue, UndoManager* undoManager);
-
+    
+    /** Changes a named property of the tree without calling any listeners
+        @returns true if the property has been changed
+     */
+    bool setPropertySiltently (const Identifier& name, const var& newValue, UndoManager* undoManager);
+    
     /** Returns true if the tree contains a named property. */
     bool hasProperty (const Identifier& name) const noexcept;
 
@@ -325,6 +330,7 @@ public:
         @see appendChild, removeChild
     */
     void addChild (const ValueTree& child, int index, UndoManager* undoManager);
+    void addChildSilently (const ValueTree& child, int index, UndoManager* undoManager);
 
     /** Appends a new child sub-tree to this tree.
         This is equivalent to calling addChild() with an index of -1. See addChild() for more details.
@@ -337,14 +343,16 @@ public:
         so that this change can be undone. Be very careful not to mix undoable and non-undoable changes!
     */
     void removeChild (const ValueTree& child, UndoManager* undoManager);
-
+    void removeChildSilently (const ValueTree& child, UndoManager* undoManager);
+    
     /** Removes a sub-tree from this tree.
         If the index is out-of-range, nothing will be changed.
         If the undoManager parameter is not nullptr, its UndoManager::perform() method will be used,
         so that this change can be undone. Be very careful not to mix undoable and non-undoable changes!
     */
     void removeChild (int childIndex, UndoManager* undoManager);
-
+    void removeChildSilently (int childIndex, UndoManager* undoManager);
+    
     /** Removes all child-trees.
         If the undoManager parameter is not nullptr, its UndoManager::perform() method will be used,
         so that this change can be undone. Be very careful not to mix undoable and non-undoable changes!
