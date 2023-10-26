@@ -52,7 +52,8 @@ public:
                        ValueType rangeEnd,
                        ValueType intervalValue,
                        ValueType skewFactor,
-                       bool useSymmetricSkew = false) noexcept
+                       bool useSymmetricSkew = false,
+                       bool allowValuesOutOfRange = false) noexcept
         : start (rangeStart), end (rangeEnd), interval (intervalValue),
           skew (skewFactor), symmetricSkew (useSymmetricSkew)
     {
@@ -181,6 +182,9 @@ public:
         if (interval > ValueType())
             v = start + interval * std::floor ((v - start) / interval + static_cast<ValueType> (0.5));
 
+        if (allowValuesOutOfRange)
+            return v;
+            
         return (v <= start || end <= start) ? start : (v >= end ? end : v);
     }
 
@@ -236,6 +240,8 @@ public:
     /** If true, the skew factor applies from the middle of the slider to each of its ends. */
     bool symmetricSkew = false;
 
+    /** Custom, if true snapToLegalValue will not constrain the returned value to range*/
+    bool allowValuesOutOfRange = false;
 private:
     void checkInvariants() const
     {
