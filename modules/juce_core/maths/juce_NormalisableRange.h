@@ -55,7 +55,7 @@ public:
                        bool useSymmetricSkew = false,
                        bool allowValuesOutOfRange = false) noexcept
         : start (rangeStart), end (rangeEnd), interval (intervalValue),
-          skew (skewFactor), symmetricSkew (useSymmetricSkew)
+          skew (skewFactor), symmetricSkew (useSymmetricSkew), valuesOutOfRange (allowValuesOutOfRange)
     {
         checkInvariants();
     }
@@ -182,7 +182,7 @@ public:
         if (interval > ValueType())
             v = start + interval * std::floor ((v - start) / interval + static_cast<ValueType> (0.5));
 
-        if (allowValuesOutOfRange)
+        if (valuesOutOfRange)
             return v;
             
         return (v <= start || end <= start) ? start : (v >= end ? end : v);
@@ -241,7 +241,7 @@ public:
     bool symmetricSkew = false;
 
     /** Custom, if true snapToLegalValue will not constrain the returned value to range*/
-    bool allowValuesOutOfRange = false;
+    bool valuesOutOfRange = false;
 private:
     void checkInvariants() const
     {
