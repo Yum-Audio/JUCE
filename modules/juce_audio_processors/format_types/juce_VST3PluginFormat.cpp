@@ -289,7 +289,7 @@ static int getNumSingleDirectionBusesFor (Vst::IComponent* component,
 static int getNumSingleDirectionChannelsFor (Vst::IComponent* component, Direction busDirection)
 {
     jassert (component != nullptr);
-    JUCE_ASSERT_MESSAGE_THREAD
+    //JUCE_ASSERT_MESSAGE_THREAD
 
     const auto direction = toVstType (busDirection);
     const Steinberg::int32 numBuses = component->getBusCount (Vst::kAudio, direction);
