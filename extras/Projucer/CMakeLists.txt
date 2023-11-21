@@ -76,6 +76,17 @@ target_sources(Projucer PRIVATE
     Source/Utility/UI/jucer_ProjucerLookAndFeel.cpp
     Source/Utility/UI/jucer_SlidingPanelComponent.cpp)
 
+target_compile_definitions(Projucer PRIVATE
+    JUCE_ALLOW_STATIC_NULL_VARIABLES=0
+    JUCE_LOAD_CURL_SYMBOLS_LAZILY=1
+    JUCE_LOG_ASSERTIONS=1
+    JUCE_STRICT_REFCOUNTEDPOINTER=1
+    JUCE_USE_CURL=1
+    JUCE_WEB_BROWSER=0
+    # This is a temporary workaround to allow builds to complete on Xcode 15.
+    # Add -Wl,-ld_classic to the OTHER_LDFLAGS build setting if you need to
+    # deploy to older versions of macOS.
+    JUCE_SILENCE_XCODE_15_LINKER_WARNING=1)
 
 
 juce_add_binary_data(ProjucerData SOURCES
@@ -109,8 +120,11 @@ juce_add_binary_data(ProjucerData SOURCES
     Source/BinaryData/Templates/jucer_AudioPluginARAPlaybackRendererTemplate.h
     Source/BinaryData/Templates/jucer_AudioPluginEditorTemplate.cpp
     Source/BinaryData/Templates/jucer_AudioPluginEditorTemplate.h
+    Source/BinaryData/Templates/jucer_AudioPluginARAEditorTemplate.cpp
+    Source/BinaryData/Templates/jucer_AudioPluginARAEditorTemplate.h
     Source/BinaryData/Templates/jucer_AudioPluginFilterTemplate.cpp
     Source/BinaryData/Templates/jucer_AudioPluginFilterTemplate.h
+    Source/BinaryData/Templates/jucer_AudioPluginARAFilterTemplate.h
     Source/BinaryData/Templates/jucer_ComponentTemplate.cpp
     Source/BinaryData/Templates/jucer_ComponentTemplate.h
     Source/BinaryData/Templates/jucer_ContentCompSimpleTemplate.h
@@ -136,6 +150,7 @@ juce_add_binary_data(ProjucerData SOURCES
     Source/BinaryData/gradle/gradle-wrapper.jar
     Source/BinaryData/gradle/gradlew
     Source/BinaryData/gradle/gradlew.bat
+    Source/BinaryData/juce_SimpleBinaryBuilder.cpp
 
     ../Build/CMake/JuceLV2Defines.h.in
     ../Build/CMake/LaunchScreen.storyboard
@@ -145,7 +160,8 @@ juce_add_binary_data(ProjucerData SOURCES
     ../Build/CMake/PIPConsole.cpp.in
     ../Build/CMake/RecentFilesMenuTemplate.nib
     ../Build/CMake/UnityPluginGUIScript.cs.in
-    ../Build/CMake/juce_runtime_arch_detection.cpp)
+    ../Build/CMake/juce_runtime_arch_detection.cpp
+    ../Build/CMake/juce_LinuxSubprocessHelper.cpp)
 
 jucer_project_begin(
   JUCER_FORMAT_VERSION "1"

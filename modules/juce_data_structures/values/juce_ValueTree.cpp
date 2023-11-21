@@ -26,7 +26,7 @@
 namespace juce
 {
 
-class ValueTree::SharedObject  : public ReferenceCountedObject
+class ValueTree::SharedObject final : public ReferenceCountedObject
 {
 public:
     using Ptr = ReferenceCountedObjectPtr<SharedObject>;
@@ -442,7 +442,7 @@ public:
     }
 
     //==============================================================================
-    struct SetPropertyAction  : public UndoableAction
+    struct SetPropertyAction final : public UndoableAction
     {
         SetPropertyAction (Ptr targetObject, const Identifier& propertyName,
                            const var& newVal, const var& oldVal, bool isAdding, bool isDeleting,
@@ -506,7 +506,7 @@ public:
     };
 
     //==============================================================================
-    struct AddOrRemoveChildAction  : public UndoableAction
+    struct AddOrRemoveChildAction final : public UndoableAction
     {
         AddOrRemoveChildAction (Ptr parentObject, int index, SharedObject* newChild)
             : target (std::move (parentObject)),
@@ -558,7 +558,7 @@ public:
     };
 
     //==============================================================================
-    struct MoveChildAction  : public UndoableAction
+    struct MoveChildAction final : public UndoableAction
     {
         MoveChildAction (Ptr parentObject, int fromIndex, int toIndex) noexcept
             : parent (std::move (parentObject)), startIndex (fromIndex), endIndex (toIndex)
@@ -851,8 +851,8 @@ int ValueTree::getReferenceCount() const noexcept
 }
 
 //==============================================================================
-struct ValueTreePropertyValueSource  : public Value::ValueSource,
-                                       private ValueTree::Listener
+struct ValueTreePropertyValueSource final : public Value::ValueSource,
+                                            private ValueTree::Listener
 {
     ValueTreePropertyValueSource (const ValueTree& vt, const Identifier& prop, UndoManager* um, bool sync)
         : tree (vt), property (prop), undoManager (um), updateSynchronously (sync)
@@ -1184,7 +1184,7 @@ JUCE_END_IGNORE_WARNINGS_MSVC
 //==============================================================================
 #if JUCE_UNIT_TESTS
 
-class ValueTreeTests  : public UnitTest
+class ValueTreeTests final : public UnitTest
 {
 public:
     ValueTreeTests()

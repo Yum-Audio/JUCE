@@ -591,7 +591,7 @@ public:
                                 if (LegacyAudioParameter::isLegacy (param))
                                     text = String (value);
                                 else
-                                    text = param->getText (value / getMaximumParameterValue (param), 7);
+                                    text = param->getText (value / getMaximumParameterValue (param), 0);
 
                                 pv->outString = text.toCFString();
 

@@ -74,7 +74,7 @@ bool ComponentPeer::isValidPeer (const ComponentPeer* const peer) noexcept
 
 void ComponentPeer::updateBounds()
 {
-    setBounds (ScalingHelpers::scaledScreenPosToUnscaled (component, component.getBoundsInParent()), false);
+    setBounds (detail::ScalingHelpers::scaledScreenPosToUnscaled (component, component.getBoundsInParent()), false);
 }
 
 bool ComponentPeer::isKioskMode() const
@@ -317,7 +317,7 @@ void ComponentPeer::handleMovedOrResized()
     {
         const WeakReference<Component> deletionChecker (&component);
 
-        auto newBounds = Component::ComponentHelpers::rawPeerPositionToLocal (component, getBounds());
+        auto newBounds = detail::ComponentHelpers::rawPeerPositionToLocal (component, getBounds());
         auto oldBounds = component.getBounds();
 
         const bool wasMoved   = (oldBounds.getPosition() != newBounds.getPosition());
@@ -432,7 +432,7 @@ Rectangle<float> ComponentPeer::globalToLocal (const Rectangle<float>& screenPos
 
 Rectangle<int> ComponentPeer::getAreaCoveredBy (const Component& subComponent) const
 {
-    return ScalingHelpers::scaledScreenPosToUnscaled
+    return detail::ScalingHelpers::scaledScreenPosToUnscaled
             (component, component.getLocalArea (&subComponent, subComponent.getLocalBounds()));
 }
 
