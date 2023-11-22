@@ -241,8 +241,10 @@ void ResizableWindow::childBoundsChanged (Component* child)
     if ((child == contentComponent) && (child != nullptr) && resizeToFitContent)
     {
         // not going to look very good if this component has a zero size..
-        jassert (child->getWidth() > 0);
-        jassert (child->getHeight() > 0);
+        // unfortunately, this assertion throws, if we host a 3rd party plugin built with juce that doesn't properly initialise their editors... 
+        // that is annoying when debugging tools that use the plugin host
+        //jassert (child->getWidth() > 0);
+        //jassert (child->getHeight() > 0);
 
         auto borders = getContentComponentBorder();
 
