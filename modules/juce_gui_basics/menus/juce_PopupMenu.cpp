@@ -2126,10 +2126,10 @@ int PopupMenu::showWithOptionalCallback (const Options& options,
 
     if (! lookAndFeel.get())
     {
-        if (auto parent = options.getParentComponent ())
-            setLookAndFeel (&parent->getLookAndFeel ());
-        else if (auto target = options.getTargetComponent ())
+        if (auto target = options.getTargetComponent ())
             setLookAndFeel (&target->getLookAndFeel ());
+        else if (auto parent = options.getParentComponent ())
+            setLookAndFeel (&parent->getLookAndFeel ());
     }
     
     if (auto* window = createWindow (options, &(callback->managerOfChosenCommand)))
