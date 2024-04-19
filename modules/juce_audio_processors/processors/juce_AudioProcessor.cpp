@@ -445,13 +445,12 @@ void AudioProcessor::validateParameter (AudioProcessorParameter* param)
 
 void AudioProcessor::checkForDuplicateTrimmedParamID ([[maybe_unused]] AudioProcessorParameter* param)
 {
-   #if JUCE_DEBUG && ! JUCE_DISABLE_CAUTIOUS_PARAMETER_ID_CHECKING
-    if (auto* withID = dynamic_cast<HostedAudioProcessorParameter*> (param))
+    #if JUCE_DEBUG && ! JUCE_DISABLE_CAUTIOUS_PARAMETER_ID_CHECKING
+    if (auto* withID = dynamic_cast<AudioProcessorParameterWithID*> (param)) //reverted this to pre 7.0.5 because it breaks the Cycling74 RNBO integration
     {
-        [[maybe_unused]] constexpr auto maximumSafeAAXParameterIdLength = 31;
+        constexpr auto maximumSafeAAXParameterIdLength = 31;
 
-        const auto paramID = withID->getParameterID();
-
+        const auto paramID = withID->paramID;
         // If you hit this assertion, a parameter name is too long to be supported
         // by the AAX plugin format.
         // If there's a chance that you'll release this plugin in AAX format, you
@@ -472,7 +471,7 @@ void AudioProcessor::checkForDuplicateTrimmedParamID ([[maybe_unused]] AudioProc
         // to your preprocessor definitions to silence this assertion.
         jassert (trimmedParamIDs.insert (paramID.substring (0, maximumSafeAAXParameterIdLength)).second);
     }
-   #endif
+    #endif
 }
 
 void AudioProcessor::checkForDuplicateParamID ([[maybe_unused]] AudioProcessorParameter* param)
