@@ -397,9 +397,23 @@ void WebComboBoxParameterAttachment::sendInitialUpdate()
     object->setProperty ("name", parameter.getName (100));
 
     if (auto* choiceParameter = dynamic_cast<AudioParameterChoice*> (&parameter))
+    {
         object->setProperty ("choices", choiceParameter->choices);
+    }
+    else if (auto* rangedParameter = dynamic_cast<RangedAudioParameter*> (&parameter))
+    {
+        const auto range = rangedParameter->getNormalisableRange ();
+        
+        StringArray choices;
+        for (int r = range.start; r <= range.end; r += range.interval)
+            choices.add (rangedParameter->getText (range.convertTo0to1(r) , 100));
+
+        object->setProperty ("choices", choices);
+    }   
     else
+    {
         object->setProperty ("choices", StringArray{});
+    }
 
     relay.emitEvent (object.get());
     attachment.sendInitialUpdate();
