@@ -69,3 +69,4 @@ extras/Projucer/cmakebuild/**
 CMakeUserPresets.json
 .editorconfig
 
+node_modules

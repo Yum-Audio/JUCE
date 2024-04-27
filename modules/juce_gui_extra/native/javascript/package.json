@@ -1,4 +1,7 @@
 {
   "name": "juce-framework-frontend",
-  "version": "7.0.7"
+  "version": "7.0.7",
+  "dependencies": {
+    "cross-env": "5.0.5"
+  }
 }
