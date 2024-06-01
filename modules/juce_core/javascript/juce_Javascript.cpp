@@ -34,10 +34,11 @@
 
 JUCE_BEGIN_IGNORE_WARNINGS_GCC_LIKE ("-Wdeprecated-copy-with-dtor",
                                      "-Wunused-but-set-variable",
-                                     "-Wdeprecated")
+                                     "-Wdeprecated",
+                                     "-Wunused-function")
 JUCE_BEGIN_IGNORE_WARNINGS_MSVC (6011 6246 6255 6262 6297 6308 6323 6340 6385 6386 28182)
- #include "choc/javascript/choc_javascript_QuickJS.h"
- #include "choc/javascript/choc_javascript.h"
+#include <juce_core/javascript/choc/javascript/choc_javascript_QuickJS.h>
+#include <juce_core/javascript/choc/javascript/choc_javascript.h>
 JUCE_END_IGNORE_WARNINGS_MSVC
 JUCE_END_IGNORE_WARNINGS_GCC_LIKE
 
@@ -135,7 +136,7 @@ struct VariantConverter<choc::value::Value>
 
         if (value.isVector() || value.isArray())
         {
-            var variant;
+            var variant { Array<var>{} };
 
             for (uint32_t i = 0; i < value.size(); ++i)
             {
@@ -1167,6 +1168,15 @@ public:
         JavascriptEngine engine;
         engine.maximumExecutionTime = RelativeTime::seconds (5);
 
+        beginTest ("Basic evaluations");
+        {
+            auto result = Result::ok();
+
+            auto value = engine.evaluate ("[]", &result);
+            expect (result.wasOk() && value == var { Array<var>{} }, "An empty array literal should evaluate correctly");
+        }
+
+        //==============================================================================
         engine.evaluate (javascriptTestSource);
 
         beginTest ("JSCursor::invokeMethod");

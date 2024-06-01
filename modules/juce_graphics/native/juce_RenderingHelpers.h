@@ -1681,28 +1681,12 @@ namespace ClipRegions
 
         void fillRectWithColour (SavedStateType& state, Rectangle<int> area, PixelARGB colour, bool replaceContents) const override
         {
-            auto totalClip = edgeTable.getMaximumBounds();
-            auto clipped = totalClip.getIntersection (area);
-
-            if (! clipped.isEmpty())
-            {
-                EdgeTableRegion et (clipped);
-                et.edgeTable.clipToEdgeTable (edgeTable);
-                state.fillWithSolidColour (et.edgeTable, colour, replaceContents);
-            }
+            fillRectWithColourImpl (state, area, colour, replaceContents);
         }
 
         void fillRectWithColour (SavedStateType& state, Rectangle<float> area, PixelARGB colour) const override
         {
-            auto totalClip = edgeTable.getMaximumBounds().toFloat();
-            auto clipped = totalClip.getIntersection (area);
-
-            if (! clipped.isEmpty())
-            {
-                EdgeTableRegion et (clipped);
-                et.edgeTable.clipToEdgeTable (edgeTable);
-                state.fillWithSolidColour (et.edgeTable, colour, false);
-            }
+            fillRectWithColourImpl (state, area, colour, false);
         }
 
         void fillAllWithColour (SavedStateType& state, PixelARGB colour, bool replaceContents) const override
@@ -1728,6 +1712,20 @@ namespace ClipRegions
         EdgeTable edgeTable;
 
     private:
+        template <typename Value>
+        void fillRectWithColourImpl (SavedStateType& state, Rectangle<Value> area, PixelARGB colour, bool replace) const
+        {
+            auto totalClip = edgeTable.getMaximumBounds().template toType<Value>();
+            auto clipped = totalClip.getIntersection (area);
+
+            if (clipped.isEmpty())
+                return;
+
+            EdgeTableRegion et (clipped);
+            et.edgeTable.clipToEdgeTable (edgeTable);
+            state.fillWithSolidColour (et.edgeTable, colour, replace);
+        }
+
         template <class SrcPixelType>
         void transformedClipImage (const Image::BitmapData& srcData, const AffineTransform& transform, Graphics::ResamplingQuality quality, const SrcPixelType*)
         {
@@ -2063,16 +2061,6 @@ public:
         return clip != nullptr;
     }
 
-    static Rectangle<int> getLargestIntegerWithin (Rectangle<float> r)
-    {
-        auto x1 = (int) std::ceil (r.getX());
-        auto y1 = (int) std::ceil (r.getY());
-        auto x2 = (int) std::floor (r.getRight());
-        auto y2 = (int) std::floor (r.getBottom());
-
-        return { x1, y1, x2 - x1, y2 - y1 };
-    }
-
     bool excludeClipRectangle (Rectangle<int> r)
     {
         if (clip != nullptr)
@@ -2081,11 +2069,11 @@ public:
 
             if (transform.isOnlyTranslated)
             {
-                clip = clip->excludeClipRectangle (getLargestIntegerWithin (transform.translated (r.toFloat())));
+                clip = clip->excludeClipRectangle (transform.translated (r.toFloat()).getLargestIntegerWithin());
             }
             else if (! transform.isRotated)
             {
-                clip = clip->excludeClipRectangle (getLargestIntegerWithin (transform.boundsAfterTransform (r.toFloat())));
+                clip = clip->excludeClipRectangle (transform.boundsAfterTransform (r.toFloat()).getLargestIntegerWithin());
             }
             else
             {
@@ -2192,6 +2180,9 @@ public:
 
     void fillRect (Rectangle<int> r, bool replaceContents)
     {
+        if (r.isEmpty())
+            return;
+
         if (clip != nullptr)
         {
             if (transform.isOnlyTranslated)
@@ -2213,6 +2204,9 @@ public:
 
     void fillRect (Rectangle<float> r)
     {
+        if (r.isEmpty())
+            return;
+
         if (clip != nullptr)
         {
             if (transform.isOnlyTranslated)

@@ -2425,6 +2425,9 @@
     <ClCompile Include="..\..\..\..\modules\juce_graphics\geometry\juce_EdgeTable.cpp">
       <Filter>JUCE Modules\juce_graphics\geometry</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\modules\juce_graphics\geometry\juce_Parallelogram_test.cpp">
+      <Filter>JUCE Modules\juce_graphics\geometry</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\..\modules\juce_graphics\geometry\juce_Path.cpp">
       <Filter>JUCE Modules\juce_graphics\geometry</Filter>
     </ClCompile>
@@ -2668,9 +2671,6 @@
     <ClCompile Include="..\..\..\..\modules\juce_graphics\native\juce_DirectWriteTypeface_windows.cpp">
       <Filter>JUCE Modules\juce_graphics\native</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\modules\juce_graphics\native\juce_DirectWriteTypeLayout_windows.cpp">
-      <Filter>JUCE Modules\juce_graphics\native</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\..\modules\juce_graphics\native\juce_Fonts_android.cpp">
       <Filter>JUCE Modules\juce_graphics\native</Filter>
     </ClCompile>
@@ -2710,19 +2710,13 @@
     <ClCompile Include="..\..\..\..\modules\juce_graphics\unicode\juce_UnicodeBrackets.cpp">
       <Filter>JUCE Modules\juce_graphics\unicode</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\modules\juce_graphics\unicode\juce_UnicodeData.cpp">
-      <Filter>JUCE Modules\juce_graphics\unicode</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\modules\juce_graphics\unicode\juce_UnicodeGrapheme.cpp">
+    <ClCompile Include="..\..\..\..\modules\juce_graphics\unicode\juce_UnicodeGenerated.cpp">
       <Filter>JUCE Modules\juce_graphics\unicode</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\modules\juce_graphics\unicode\juce_UnicodeLine.cpp">
       <Filter>JUCE Modules\juce_graphics\unicode</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\modules\juce_graphics\unicode\juce_UnicodeScript.cpp">
-      <Filter>JUCE Modules\juce_graphics\unicode</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\modules\juce_graphics\unicode\juce_UnicodeTestData.cpp">
       <Filter>JUCE Modules\juce_graphics\unicode</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\modules\juce_graphics\unicode\juce_UnicodeUtils.cpp">
@@ -6414,15 +6408,6 @@
     <ClInclude Include="..\..\..\..\modules\juce_graphics\placement\juce_RectanglePlacement.h">
       <Filter>JUCE Modules\juce_graphics\placement</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\modules\juce_graphics\unicode\juce_LineBreakTable.inl">
-      <Filter>JUCE Modules\juce_graphics\unicode</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\modules\juce_graphics\unicode\juce_Unicode.h">
-      <Filter>JUCE Modules\juce_graphics\unicode</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\modules\juce_graphics\unicode\juce_UnicodeScript.h">
-      <Filter>JUCE Modules\juce_graphics\unicode</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\..\modules\juce_graphics\juce_graphics.h">
       <Filter>JUCE Modules\juce_graphics</Filter>
     </ClInclude>
@@ -7189,6 +7174,12 @@
     </None>
     <None Include="..\..\..\..\modules\juce_audio_processors\format_types\VST3_SDK\README.md">
       <Filter>JUCE Modules\juce_audio_processors\format_types\VST3_SDK</Filter>
+    </None>
+    <None Include="..\..\..\..\modules\juce_core\javascript\choc\JUCE_CHANGES.txt">
+      <Filter>JUCE Modules\juce_core\javascript\choc</Filter>
+    </None>
+    <None Include="..\..\..\..\modules\juce_core\javascript\choc\LICENSE.md">
+      <Filter>JUCE Modules\juce_core\javascript\choc</Filter>
     </None>
     <None Include="..\..\..\..\modules\juce_core\native\java\README.txt">
       <Filter>JUCE Modules\juce_core\native\java</Filter>

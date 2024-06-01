@@ -104,11 +104,6 @@ StringArray Font::findAllTypefaceStyles (const String& family)
     return FTTypefaceList::getInstance()->findAllTypefaceStyles (family);
 }
 
-bool TextLayout::createNativeLayout (const AttributedString&)
-{
-    return false;
-}
-
 //==============================================================================
 struct DefaultFontInfo
 {
@@ -197,7 +192,7 @@ private:
     JUCE_DECLARE_NON_COPYABLE (DefaultFontInfo)
 };
 
-Typeface::Ptr Font::getDefaultTypefaceForFont (const Font& font)
+Typeface::Ptr Font::Native::getDefaultPlatformTypefaceForFont (const Font& font)
 {
     static const DefaultFontInfo defaultInfo;
 

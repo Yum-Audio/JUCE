@@ -1456,8 +1456,7 @@ struct RenderContext
     virtual void dispatchDeferredRepaints() = 0;
     virtual void performAnyPendingRepaintsNow() = 0;
     virtual void onVBlank() = 0;
-    virtual void beginResize() = 0;
-    virtual void endResize() = 0;
+    virtual void setResizing (bool) = 0;
     virtual void handleNcCalcSize (WPARAM wParam, LPARAM lParam) = 0;
     virtual void handleShowWindow() = 0;
     virtual std::optional<LRESULT> getNcHitTestResult() = 0;
@@ -3676,20 +3675,19 @@ private:
 
                 break;
 
-            case WM_ENTERSIZEMOVE:
-                if (renderContext != nullptr)
-                    renderContext->beginResize();
-
-                break;
-
             case WM_EXITSIZEMOVE:
                 if (renderContext != nullptr)
-                    renderContext->endResize();
+                    renderContext->setResizing (false);
 
                 break;
 
             //==============================================================================
-            case WM_SIZING:                  return handleSizeConstraining (*(RECT*) lParam, wParam);
+            case WM_SIZING:
+                if (renderContext != nullptr)
+                    renderContext->setResizing (true);
+
+                return handleSizeConstraining (*(RECT*) lParam, wParam);
+
             case WM_WINDOWPOSCHANGING:       return handlePositionChanging (*(WINDOWPOS*) lParam);
             case 0x2e0: /* WM_DPICHANGED */  return handleDPIChanging ((int) HIWORD (wParam), *(RECT*) lParam);
 
@@ -4469,8 +4467,7 @@ public:
         return {};
     }
 
-    void beginResize() override {}
-    void endResize() override {}
+    void setResizing (bool) override {}
     void handleNcCalcSize (WPARAM, LPARAM) override {}
     void handleShowWindow() override {}
 
@@ -4728,14 +4725,9 @@ public:
 
     std::optional<LRESULT> getNcHitTestResult() override { return {}; }
 
-    void beginResize() override
+    void setResizing (bool x) override
     {
-        direct2DContext->startResizing();
-    }
-
-    void endResize() override
-    {
-        direct2DContext->finishResizing();
+        direct2DContext->setResizing (x);
     }
 
     void handleNcCalcSize (WPARAM, LPARAM lParam) override
@@ -4774,24 +4766,21 @@ private:
         //
         // Direct2DLowLevelGraphicsContext::endFrame calls ID2D1DeviceContext::EndDraw to finish painting
         // and then tells the swap chain to present the next swap chain back buffer.
-        direct2DContext->setPhysicalPixelScaleFactor ((float) peer.getPlatformScaleFactor());
+        if (! direct2DContext->startFrame ((float) peer.getPlatformScaleFactor()))
+            return;
 
-        if (direct2DContext->startFrame())
+        peer.handlePaint (*direct2DContext);
+        direct2DContext->endFrame();
+
+       #if JUCE_DIRECT2D_METRICS
+        if (lastPaintStartTicks > 0)
         {
-            direct2DContext->addTransform (AffineTransform::scale ((float) peer.getPlatformScaleFactor()));
-            peer.handlePaint (*direct2DContext);
-            direct2DContext->endFrame();
-
-           #if JUCE_DIRECT2D_METRICS
-            if (lastPaintStartTicks > 0)
-            {
-                direct2DContext->metrics->addValueTicks (Direct2DMetrics::messageThreadPaintDuration,
-                                                         Time::getHighResolutionTicks() - paintStartTicks);
-                direct2DContext->metrics->addValueTicks (Direct2DMetrics::frameInterval, paintStartTicks - lastPaintStartTicks);
-            }
-            lastPaintStartTicks = paintStartTicks;
-           #endif
+            direct2DContext->metrics->addValueTicks (Direct2DMetrics::messageThreadPaintDuration,
+                                                     Time::getHighResolutionTicks() - paintStartTicks);
+            direct2DContext->metrics->addValueTicks (Direct2DMetrics::frameInterval, paintStartTicks - lastPaintStartTicks);
         }
+        lastPaintStartTicks = paintStartTicks;
+       #endif
     }
 
     HWNDComponentPeer& peer;
@@ -5523,25 +5512,19 @@ bool juce::detail::WindowingHelpers::isWindowOnCurrentVirtualDesktop (void* x)
     if (x == nullptr)
         return false;
 
-    static auto* desktopManager = []
-    {
-        JuceIVirtualDesktopManager* result = nullptr;
+    ComSmartPtr<JuceIVirtualDesktopManager> manager;
 
-        JUCE_BEGIN_IGNORE_WARNINGS_GCC_LIKE ("-Wlanguage-extension-token")
+    JUCE_BEGIN_IGNORE_WARNINGS_GCC_LIKE ("-Wlanguage-extension-token")
+    manager.CoCreateInstance (__uuidof (JuceVirtualDesktopManager), CLSCTX_ALL);
+    JUCE_END_IGNORE_WARNINGS_GCC_LIKE
 
-        if (SUCCEEDED (CoCreateInstance (__uuidof (JuceVirtualDesktopManager), nullptr, CLSCTX_ALL, IID_PPV_ARGS (&result))))
-            return result;
-
-        JUCE_END_IGNORE_WARNINGS_GCC_LIKE
-
-        return static_cast<JuceIVirtualDesktopManager*> (nullptr);
-    }();
+    if (manager == nullptr)
+        return true;
 
     BOOL current = false;
 
-    if (auto* dm = desktopManager)
-        if (SUCCEEDED (dm->IsWindowOnCurrentVirtualDesktop (static_cast<HWND> (x), &current)))
-            return current != false;
+    if (FAILED (manager->IsWindowOnCurrentVirtualDesktop (static_cast<HWND> (x), &current)))
+        return true;
 
-    return true;
+    return current != false;
 }

@@ -54,9 +54,70 @@ public:
 
     void push (ComSmartPtr<ID2D1DeviceContext1> context, const D2D1_LAYER_PARAMETERS& layerParameters)
     {
-        // Clipping and transparency are all handled by pushing Direct2D layers. The SavedState creates an internal stack
-        // of Layer objects to keep track of how many layers need to be popped.
-        // Pass nullptr for the PushLayer layer parameter to allow Direct2D to manage the layers (Windows 8 or later)
+        // Clipping and transparency are all handled by pushing Direct2D
+        // layers.The SavedState creates an internal stack of Layer objects to
+        // keep track of how many layers need to be popped. Pass nullptr for
+        // the PushLayer layer parameter to allow Direct2D to manage the layers
+        // (Windows 8 or later)
+
+       #if JUCE_DEBUG
+
+        // Check if this should be an axis-aligned clip layer (per the D2D
+        // debug layer)
+        const auto isGeometryAxisAlignedRectangle = [&]
+        {
+            auto* geometry = layerParameters.geometricMask;
+
+            if (geometry == nullptr)
+                return false;
+
+            struct Sink : public ComBaseClassHelper<ID2D1SimplifiedGeometrySink>
+            {
+                D2D1_POINT_2F lastPoint{};
+                bool axisAlignedLines = true;
+                UINT32 lineCount = 0;
+
+                STDMETHOD (Close)() override { return S_OK; }
+                STDMETHOD_ (void, SetFillMode) (D2D1_FILL_MODE) override {}
+                STDMETHOD_ (void, SetSegmentFlags) (D2D1_PATH_SEGMENT) override {}
+                STDMETHOD_ (void, EndFigure) (D2D1_FIGURE_END) override {}
+
+                STDMETHOD_ (void, BeginFigure) (D2D1_POINT_2F p, D2D1_FIGURE_BEGIN) override { lastPoint = p; }
+
+                STDMETHOD_ (void, AddLines) (const D2D1_POINT_2F* points, UINT32 count) override
+                {
+                    for (UINT32 i = 0; i < count; ++i)
+                    {
+                        auto p = points[i];
+
+                        axisAlignedLines &= (approximatelyEqual (p.x, lastPoint.x) || approximatelyEqual (p.y, lastPoint.y));
+                        lastPoint = p;
+                    }
+
+                    lineCount += count;
+                }
+
+                STDMETHOD_ (void, AddBeziers) (const D2D1_BEZIER_SEGMENT*, UINT32) override
+                {
+                    axisAlignedLines = false;
+                }
+            };
+
+            Sink sink;
+            geometry->Simplify (D2D1_GEOMETRY_SIMPLIFICATION_OPTION_CUBICS_AND_LINES,
+                                D2D1::Matrix3x2F::Identity(),
+                                1.0f,
+                                &sink);
+
+            // Check for 3 lines; the BeginFigure counts as 1 line
+            return sink.axisAlignedLines && sink.lineCount == 3;
+        }();
+
+        jassert (layerParameters.opacity != 1.0f
+                 || layerParameters.opacityBrush
+                 || ! isGeometryAxisAlignedRectangle);
+       #endif
+
         context->PushLayer (layerParameters, nullptr);
         pushedLayers.emplace_back (popLayerFlag);
     }
@@ -347,7 +408,7 @@ public:
 
     bool doesIntersectClipList (Line<float> r) const noexcept
     {
-        return doesIntersectClipList (Rectangle { r.getStart(), r.getEnd() });
+        return doesIntersectClipList (Rectangle { r.getStart(), r.getEnd() }.expanded (1.0f));
     }
 
     bool doesIntersectClipList (const RectangleList<float>& other) const noexcept
@@ -466,12 +527,7 @@ public:
         targetAlpha = alpha;
     }
 
-    virtual void clearBackground()
-    {
-        deviceResources.deviceContext.context->Clear (backgroundColor);
-    }
-
-    virtual SavedState* startFrame()
+    virtual SavedState* startFrame (float dpiScale)
     {
         prepare();
 
@@ -495,7 +551,7 @@ public:
         // Init device context transform
         deviceResources.deviceContext.resetTransform();
 
-        const auto effectiveDpi = USER_DEFAULT_SCREEN_DPI * owner.getPhysicalPixelScaleFactor();
+        const auto effectiveDpi = USER_DEFAULT_SCREEN_DPI * dpiScale;
         deviceResources.deviceContext.context->SetDpi (effectiveDpi, effectiveDpi);
 
         // Start drawing
@@ -704,9 +760,6 @@ public:
 
         const auto brush = owner.currentState->getBrush (fillTransform);
 
-        if (brush == nullptr)
-            return;
-
         if (transform.isOnlyTranslated)
         {
             const auto translated = shape + transform.offset.toFloat();
@@ -760,10 +813,10 @@ private:
 Direct2DGraphicsContext::Direct2DGraphicsContext() = default;
 Direct2DGraphicsContext::~Direct2DGraphicsContext() = default;
 
-bool Direct2DGraphicsContext::startFrame()
+bool Direct2DGraphicsContext::startFrame (float dpiScale)
 {
     auto pimpl = getPimpl();
-    currentState = pimpl->startFrame();
+    currentState = pimpl->startFrame (dpiScale);
 
     if (currentState == nullptr)
         return false;
@@ -780,6 +833,8 @@ bool Direct2DGraphicsContext::startFrame()
         // Init font & brush
         setFont (currentState->font);
         currentState->updateCurrentBrush();
+
+        addTransform (AffineTransform::scale (dpiScale));
     }
 
     return true;
@@ -798,6 +853,8 @@ void Direct2DGraphicsContext::setOrigin (Point<int> o)
     applyPendingClipList();
 
     currentState->currentTransform.setOrigin (o);
+
+    resetPendingClipList();
 }
 
 void Direct2DGraphicsContext::addTransform (const AffineTransform& transform)
@@ -918,7 +975,7 @@ void Direct2DGraphicsContext::excludeClipRectangle (const Rectangle<int>& userSp
     if (transform.isOnlyTranslated)
     {
         // Just a translation; pre-translate the exclusion area
-        auto translatedR = transform.translated (userSpaceExcludedRectangle.toFloat());
+        auto translatedR = transform.translated (userSpaceExcludedRectangle.toFloat()).getLargestIntegerWithin().toFloat();
 
         if (! translatedR.contains (frameSize))
         {
@@ -929,7 +986,7 @@ void Direct2DGraphicsContext::excludeClipRectangle (const Rectangle<int>& userSp
     else if (currentState->isCurrentTransformAxisAligned())
     {
         // Just a scale + translation; pre-transform the exclusion area
-        auto transformedR = transform.boundsAfterTransform (userSpaceExcludedRectangle.toFloat());
+        auto transformedR = transform.boundsAfterTransform (userSpaceExcludedRectangle.toFloat()).getLargestIntegerWithin().toFloat();
 
         if (! transformedR.contains (frameSize))
         {
@@ -942,11 +999,6 @@ void Direct2DGraphicsContext::excludeClipRectangle (const Rectangle<int>& userSp
         deviceSpaceClipList = frameSize;
         pendingClipList.subtract (userSpaceExcludedRectangle.toFloat());
     }
-}
-
-void Direct2DGraphicsContext::setPhysicalPixelScaleFactor (float f)
-{
-    scale = f;
 }
 
 void Direct2DGraphicsContext::resetPendingClipList()
@@ -1028,12 +1080,21 @@ void Direct2DGraphicsContext::clipToImageAlpha (const Image& sourceImage, const 
     // to the sourceImage bounds
     auto brushTransform = currentState->currentTransform.getTransformWith (transform);
     {
-        D2D1_RECT_F sourceImageRectF = D2DUtilities::toRECT_F (sourceImage.getBounds());
-        ComSmartPtr<ID2D1RectangleGeometry> geometry;
-        getPimpl()->getDirect2DFactory()->CreateRectangleGeometry (sourceImageRectF, geometry.resetAndGetPointerAddress());
+        if (D2DHelpers::isTransformAxisAligned (brushTransform))
+        {
+            currentState->pushAliasedAxisAlignedClipLayer (sourceImage.getBounds().toFloat().transformedBy (brushTransform));
+        }
+        else
+        {
+            const auto sourceImageRectF = D2DUtilities::toRECT_F (sourceImage.getBounds());
+            ComSmartPtr<ID2D1RectangleGeometry> geometry;
 
-        if (geometry)
-            currentState->pushTransformedRectangleGeometryClipLayer (geometry, brushTransform);
+            if (const auto hr = getPimpl()->getDirect2DFactory()->CreateRectangleGeometry (sourceImageRectF, geometry.resetAndGetPointerAddress());
+                SUCCEEDED (hr) && geometry != nullptr)
+            {
+                currentState->pushTransformedRectangleGeometryClipLayer (geometry, brushTransform);
+            }
+        }
     }
 
     // Set the clip list to the full size of the frame to match
@@ -1178,19 +1239,22 @@ void Direct2DGraphicsContext::setInterpolationQuality (Graphics::ResamplingQuali
 
 void Direct2DGraphicsContext::fillRect (const Rectangle<int>& r, bool replaceExistingContents)
 {
+    if (r.isEmpty())
+        return;
+
     if (replaceExistingContents)
-    {
-        JUCE_SCOPED_TRACE_EVENT_FRAME_RECT_I32 (etw::fillRectReplace, etw::direct2dKeyword, getFrameId(), r);
-
-        applyPendingClipList();
         clipToRectangle (r);
-        getPimpl()->clearBackground();
-        currentState->popTopLayer();
-    }
 
-    auto fill = [] (Rectangle<float> rect, ComSmartPtr<ID2D1DeviceContext1> deviceContext, ComSmartPtr<ID2D1Brush> brush)
+    const auto clearColour = currentState->fillType.colour;
+
+    auto fill = [replaceExistingContents, clearColour] (Rectangle<float> rect,
+                                                        ComSmartPtr<ID2D1DeviceContext1> deviceContext,
+                                                        ComSmartPtr<ID2D1Brush> brush)
     {
-        deviceContext->FillRectangle (D2DUtilities::toRECT_F (rect), brush);
+        if (replaceExistingContents)
+            deviceContext->Clear (D2DUtilities::toCOLOR_F (clearColour));
+        else if (brush != nullptr)
+            deviceContext->FillRectangle (D2DUtilities::toRECT_F (rect), brush);
     };
 
     getPimpl()->paintPrimitive (r.toFloat(), fill);
@@ -1198,9 +1262,13 @@ void Direct2DGraphicsContext::fillRect (const Rectangle<int>& r, bool replaceExi
 
 void Direct2DGraphicsContext::fillRect (const Rectangle<float>& r)
 {
+    if (r.isEmpty())
+        return;
+
     auto fill = [] (Rectangle<float> rect, ComSmartPtr<ID2D1DeviceContext1> deviceContext, ComSmartPtr<ID2D1Brush> brush)
     {
-        deviceContext->FillRectangle (D2DUtilities::toRECT_F (rect), brush);
+        if (brush != nullptr)
+            deviceContext->FillRectangle (D2DUtilities::toRECT_F (rect), brush);
     };
 
     getPimpl()->paintPrimitive (r, fill);
@@ -1213,8 +1281,9 @@ void Direct2DGraphicsContext::fillRectList (const RectangleList<float>& list)
 
     auto fill = [] (const RectangleList<float>& l, ComSmartPtr<ID2D1DeviceContext1> deviceContext, ComSmartPtr<ID2D1Brush> brush)
     {
-        for (const auto& r : l)
-            deviceContext->FillRectangle (D2DUtilities::toRECT_F (r), brush);
+        if (brush != nullptr)
+            for (const auto& r : l)
+                deviceContext->FillRectangle (D2DUtilities::toRECT_F (r), brush);
     };
 
     getPimpl()->paintPrimitive (list, fill);
@@ -1230,7 +1299,8 @@ void Direct2DGraphicsContext::drawRect (const Rectangle<float>& r, float lineThi
 
     auto draw = [&] (Rectangle<float> rect, ComSmartPtr<ID2D1DeviceContext1> deviceContext, ComSmartPtr<ID2D1Brush> brush)
     {
-        deviceContext->DrawRectangle (D2DUtilities::toRECT_F (rect), brush, lineThickness);
+        if (brush != nullptr)
+            deviceContext->DrawRectangle (D2DUtilities::toRECT_F (rect), brush, lineThickness);
     };
 
     auto reducedR = r.reduced (lineThickness * 0.5f);
@@ -1377,6 +1447,9 @@ void Direct2DGraphicsContext::drawLineWithThickness (const Line<float>& line, fl
 {
     auto draw = [&] (Line<float> l, ComSmartPtr<ID2D1DeviceContext1> deviceContext, ComSmartPtr<ID2D1Brush> brush)
     {
+        if (brush == nullptr)
+            return;
+
         const auto makePoint = [] (const auto& x) { return D2D1::Point2F (x.getX(), x.getY()); };
         deviceContext->DrawLine (makePoint (l.getStart()),
                                  makePoint (l.getEnd()),
@@ -1401,13 +1474,21 @@ const Font& Direct2DGraphicsContext::getFont()
 
 float Direct2DGraphicsContext::getPhysicalPixelScaleFactor() const
 {
-    return scale;
+    if (currentState != nullptr)
+        return currentState->currentTransform.getPhysicalPixelScaleFactor();
+
+    // If this is hit, there's no frame in progress, so the scale factor isn't meaningful
+    jassertfalse;
+    return 1.0f;
 }
 
 void Direct2DGraphicsContext::drawRoundedRectangle (const Rectangle<float>& area, float cornerSize, float lineThickness)
 {
     auto draw = [&] (Rectangle<float> rect, ComSmartPtr<ID2D1DeviceContext1> deviceContext, ComSmartPtr<ID2D1Brush> brush)
     {
+        if (brush == nullptr)
+            return;
+
         D2D1_ROUNDED_RECT roundedRect { D2DUtilities::toRECT_F (rect), cornerSize, cornerSize };
         deviceContext->DrawRoundedRectangle (roundedRect, brush, lineThickness);
     };
@@ -1419,6 +1500,9 @@ void Direct2DGraphicsContext::fillRoundedRectangle (const Rectangle<float>& area
 {
     auto fill = [&] (Rectangle<float> rect, ComSmartPtr<ID2D1DeviceContext1> deviceContext, ComSmartPtr<ID2D1Brush> brush)
     {
+        if (brush == nullptr)
+            return;
+
         D2D1_ROUNDED_RECT roundedRect { D2DUtilities::toRECT_F (rect), cornerSize, cornerSize };
         deviceContext->FillRoundedRectangle (roundedRect, brush);
     };
@@ -1430,6 +1514,9 @@ void Direct2DGraphicsContext::drawEllipse (const Rectangle<float>& area, float l
 {
     auto draw = [&] (Rectangle<float> rect, ComSmartPtr<ID2D1DeviceContext1> deviceContext, ComSmartPtr<ID2D1Brush> brush)
     {
+        if (brush == nullptr)
+            return;
+
         auto centre = rect.getCentre();
         D2D1_ELLIPSE ellipse { { centre.x, centre.y }, rect.proportionOfWidth (0.5f), rect.proportionOfHeight (0.5f) };
         deviceContext->DrawEllipse (ellipse, brush, lineThickness);
@@ -1442,6 +1529,9 @@ void Direct2DGraphicsContext::fillEllipse (const Rectangle<float>& area)
 {
     auto fill = [&] (Rectangle<float> rect, ComSmartPtr<ID2D1DeviceContext1> deviceContext, ComSmartPtr<ID2D1Brush> brush)
     {
+        if (brush == nullptr)
+            return;
+
         auto centre = rect.getCentre();
         D2D1_ELLIPSE ellipse { { centre.x, centre.y }, rect.proportionOfWidth (0.5f), rect.proportionOfHeight (0.5f) };
         deviceContext->FillEllipse (ellipse, brush);

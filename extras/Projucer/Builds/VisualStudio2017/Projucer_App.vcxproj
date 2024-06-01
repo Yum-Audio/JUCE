@@ -1028,6 +1028,9 @@
     <ClCompile Include="..\..\..\..\modules\juce_graphics\geometry\juce_EdgeTable.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\modules\juce_graphics\geometry\juce_Parallelogram_test.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\..\..\modules\juce_graphics\geometry\juce_Path.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
@@ -1268,9 +1271,6 @@
     <ClCompile Include="..\..\..\..\modules\juce_graphics\native\juce_DirectWriteTypeface_windows.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\modules\juce_graphics\native\juce_DirectWriteTypeLayout_windows.cpp">
-      <ExcludedFromBuild>true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\..\..\modules\juce_graphics\native\juce_Fonts_android.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
@@ -1307,19 +1307,13 @@
     <ClCompile Include="..\..\..\..\modules\juce_graphics\unicode\juce_UnicodeBrackets.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\modules\juce_graphics\unicode\juce_UnicodeData.cpp">
-      <ExcludedFromBuild>true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\modules\juce_graphics\unicode\juce_UnicodeGrapheme.cpp">
+    <ClCompile Include="..\..\..\..\modules\juce_graphics\unicode\juce_UnicodeGenerated.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\..\..\modules\juce_graphics\unicode\juce_UnicodeLine.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\..\..\modules\juce_graphics\unicode\juce_UnicodeScript.cpp">
-      <ExcludedFromBuild>true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\modules\juce_graphics\unicode\juce_UnicodeTestData.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\..\..\modules\juce_graphics\unicode\juce_UnicodeUtils.cpp">
@@ -2633,9 +2627,6 @@
     <ClInclude Include="..\..\..\..\modules\juce_graphics\native\juce_RenderingHelpers.h"/>
     <ClInclude Include="..\..\..\..\modules\juce_graphics\placement\juce_Justification.h"/>
     <ClInclude Include="..\..\..\..\modules\juce_graphics\placement\juce_RectanglePlacement.h"/>
-    <ClInclude Include="..\..\..\..\modules\juce_graphics\unicode\juce_LineBreakTable.inl"/>
-    <ClInclude Include="..\..\..\..\modules\juce_graphics\unicode\juce_Unicode.h"/>
-    <ClInclude Include="..\..\..\..\modules\juce_graphics\unicode\juce_UnicodeScript.h"/>
     <ClInclude Include="..\..\..\..\modules\juce_graphics\juce_graphics.h"/>
     <ClInclude Include="..\..\..\..\modules\juce_gui_basics\accessibility\enums\juce_AccessibilityActions.h"/>
     <ClInclude Include="..\..\..\..\modules\juce_gui_basics\accessibility\enums\juce_AccessibilityEvent.h"/>
@@ -2907,6 +2898,8 @@
     <None Include="..\..\Source\BinaryData\Icons\wizard_StaticLibrary.svg"/>
     <None Include="..\..\Source\BinaryData\colourscheme_dark.xml"/>
     <None Include="..\..\Source\BinaryData\colourscheme_light.xml"/>
+    <None Include="..\..\..\..\modules\juce_core\javascript\choc\JUCE_CHANGES.txt"/>
+    <None Include="..\..\..\..\modules\juce_core\javascript\choc\LICENSE.md"/>
     <None Include="..\..\..\..\modules\juce_core\native\java\README.txt"/>
     <None Include="..\..\..\..\modules\juce_graphics\image_formats\jpglib\changes to libjpeg for JUCE.txt"/>
     <None Include="..\..\..\..\modules\juce_graphics\image_formats\pnglib\libpng_readme.txt"/>
