@@ -1457,6 +1457,7 @@ struct RenderContext
     virtual void performAnyPendingRepaintsNow() = 0;
     virtual void onVBlank() = 0;
     virtual void setResizing (bool) = 0;
+    virtual bool getResizing() const = 0;
     virtual void handleNcCalcSize (WPARAM wParam, LPARAM lParam) = 0;
     virtual void handleShowWindow() = 0;
     virtual std::optional<LRESULT> getNcHitTestResult() = 0;
@@ -1602,6 +1603,13 @@ public:
         // generator in handlePositionChanged can cause the window to move again.
         if (inHandlePositionChanged)
             return;
+
+        // This is more of a guess than a certainty, but if we've captured the mouse and we're also
+        // updating the bounds, there's a good chance we're in a client-initiated resize.
+        // The resizing flag will be unset by WM_CAPTURECHANGED.
+        if (GetCapture() == hwnd)
+            if (renderContext != nullptr)
+                renderContext->setResizing (true);
 
         const ScopedValueSetter<bool> scope (shouldIgnoreModalDismiss, true);
 
@@ -2746,6 +2754,9 @@ private:
 
             constrainerIsResizing = false;
         }
+
+        if (renderContext != nullptr && renderContext->getResizing())
+            renderContext->setResizing (false);
 
         if (isDragging)
             doMouseUp (getCurrentMousePos(), (WPARAM) 0);
@@ -4459,6 +4470,9 @@ public:
 
     void onVBlank() override {}
 
+    void setResizing (bool x) override { resizing = x; }
+    bool getResizing() const override { return resizing; }
+
     std::optional<LRESULT> getNcHitTestResult() override
     {
         if (! peer.hasTitleBar())
@@ -4467,7 +4481,6 @@ public:
         return {};
     }
 
-    void setResizing (bool) override {}
     void handleNcCalcSize (WPARAM, LPARAM) override {}
     void handleShowWindow() override {}
 
@@ -4638,6 +4651,7 @@ private:
     TemporaryImage offscreenImageGenerator;
     RectangleList<int> deferredRepaints;
     uint8 layeredWindowAlpha = 255;
+    bool resizing = false;
 };
 
 class D2DContext : public RenderContext
@@ -4728,6 +4742,11 @@ public:
     void setResizing (bool x) override
     {
         direct2DContext->setResizing (x);
+    }
+
+    bool getResizing() const override
+    {
+        return direct2DContext->getResizing();
     }
 
     void handleNcCalcSize (WPARAM, LPARAM lParam) override
