@@ -107,7 +107,7 @@ public:
     inline bool operator>= (StringRef other) const noexcept             { return name >= other; }
 
     /** Returns this identifier as a string. */
-    const String& toString() const noexcept                             { return value; }
+    const String& toString(bool includeFlags = true) const noexcept                             { return includeFlags ? value : name; }
 
     /** Returns this identifier's raw string pointer. */
     operator String::CharPointerType() const noexcept                   { return value.getCharPointer(); }
