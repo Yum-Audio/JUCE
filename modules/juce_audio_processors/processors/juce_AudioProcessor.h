@@ -55,8 +55,10 @@ namespace juce
 */
 class JUCE_API  AudioProcessor : private AAXClientExtensions
 {
-protected:
+public:
     struct BusesProperties;
+    
+protected:
 
     //==============================================================================
     /** Constructor.
@@ -1323,6 +1325,36 @@ public:
     /** @internal */
     static void JUCE_CALLTYPE setTypeOfNextNewPlugin (WrapperType);
 
+    //==============================================================================
+    /** Structure used for AudioProcessor Callbacks */
+    /* Note, these are protected on vanilla JUCE... but why would they be, when I want to construct audio processors dynamically and need to pass that info around outisde the processor class...*/
+    struct BusProperties
+    {
+        /** The name of the bus */
+        String busName;
+
+        /** The default layout of the bus */
+        AudioChannelSet defaultLayout;
+
+        /** Is this bus activated by default? */
+        bool isActivatedByDefault;
+    };
+
+    /** Structure used for AudioProcessor Callbacks */
+    struct BusesProperties
+    {
+        /** The layouts of the input buses */
+        Array<BusProperties> inputLayouts;
+
+        /** The layouts of the output buses */
+        Array<BusProperties> outputLayouts;
+
+        void addBus (bool isInput, const String& name, const AudioChannelSet& defaultLayout, bool isActivatedByDefault = true);
+
+        [[nodiscard]] BusesProperties withInput  (const String& name, const AudioChannelSet& defaultLayout, bool isActivatedByDefault = true) const;
+        [[nodiscard]] BusesProperties withOutput (const String& name, const AudioChannelSet& defaultLayout, bool isActivatedByDefault = true) const;
+    };
+
 protected:
     /** Callback to query if the AudioProcessor supports a specific layout.
 
@@ -1376,35 +1408,6 @@ protected:
         implementation.
     */
     virtual bool applyBusLayouts (const BusesLayout& layouts);
-
-    //==============================================================================
-    /** Structure used for AudioProcessor Callbacks */
-    struct BusProperties
-    {
-        /** The name of the bus */
-        String busName;
-
-        /** The default layout of the bus */
-        AudioChannelSet defaultLayout;
-
-        /** Is this bus activated by default? */
-        bool isActivatedByDefault;
-    };
-
-    /** Structure used for AudioProcessor Callbacks */
-    struct BusesProperties
-    {
-        /** The layouts of the input buses */
-        Array<BusProperties> inputLayouts;
-
-        /** The layouts of the output buses */
-        Array<BusProperties> outputLayouts;
-
-        void addBus (bool isInput, const String& name, const AudioChannelSet& defaultLayout, bool isActivatedByDefault = true);
-
-        [[nodiscard]] BusesProperties withInput  (const String& name, const AudioChannelSet& defaultLayout, bool isActivatedByDefault = true) const;
-        [[nodiscard]] BusesProperties withOutput (const String& name, const AudioChannelSet& defaultLayout, bool isActivatedByDefault = true) const;
-    };
 
     /** Callback to query if adding/removing buses currently possible.
 
