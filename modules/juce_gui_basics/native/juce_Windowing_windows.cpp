@@ -4679,7 +4679,12 @@ ModifierKeys HWNDComponentPeer::modifiersAtLastCallback;
 
 ComponentPeer* Component::createNewPeer (int styleFlags, void* parentHWND)
 {
-    return new HWNDComponentPeer { *this, styleFlags, (HWND) parentHWND, false, 1 };
+#if JUCE_USE_SOFTWARE_IMAGE_TYPE
+    int defaultEngine = 0;
+#else
+    int defaultEngine = 1;
+#endif
+    return new HWNDComponentPeer { *this, styleFlags, (HWND) parentHWND, false, defaultEngine };
 }
 
 Image createSnapshotOfNativeWindow (void* nativeWindowHandle)
