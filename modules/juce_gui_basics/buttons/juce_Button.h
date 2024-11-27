@@ -188,6 +188,14 @@ public:
     */
     int getRadioGroupId() const noexcept                        { return radioGroupId; }
 
+    /** When true, a button of a radio group can be disabled by clicking on it
+     */
+    void setClickingTogglesOffInRadioGroup (bool clickingTogglesOff) noexcept { clickingTogglesOffInRadioGroup = clickingTogglesOff; }
+
+    /** Returns true if a button of a radio group can be disabled by clicking on it 
+    */
+    bool getClickingTogglesOffInRadioGroup() const noexcept             { return clickingTogglesOffInRadioGroup; }
+
     //==============================================================================
     /**
         Used to receive callbacks when a button is clicked.
@@ -532,6 +540,7 @@ private:
     bool isKeyDown = false;
     bool triggerOnMouseDown = false;
     bool generateTooltip = false;
+    bool clickingTogglesOffInRadioGroup = false;
 
     void checkToggleableState (bool wasToggleable);
 

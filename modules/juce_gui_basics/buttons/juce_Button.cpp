@@ -365,7 +365,7 @@ void Button::internalClickCallback (const ModifierKeys& modifiers)
 {
     if (clickTogglesState)
     {
-        const bool shouldBeOn = (radioGroupId != 0 || ! lastToggleState);
+        const bool shouldBeOn = ((radioGroupId != 0 && ! getClickingTogglesOffInRadioGroup ()) || ! lastToggleState);
 
         if (shouldBeOn != getToggleState())
         {
