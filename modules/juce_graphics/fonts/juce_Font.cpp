@@ -372,22 +372,22 @@ auto legacyArgs (Args&&... args)
     return result;
 }
 
-Font::Font()                                : font (new SharedFontInternal (legacyArgs())) {}
-Font::Font (const Typeface::Ptr& typeface)  : font (new SharedFontInternal (legacyArgs (typeface))) {}
+Font::Font()                                : font (new SharedFontInternal (FontOptions())) {}
+Font::Font (const Typeface::Ptr& typeface)  : font (new SharedFontInternal (FontOptions (typeface))) {}
 Font::Font (const Font& other) noexcept     : font (other.font) {}
 
 Font::Font (float fontHeight, int styleFlags)
-    : font (new SharedFontInternal (legacyArgs (fontHeight, styleFlags)))
+    : font (new SharedFontInternal (FontOptions (fontHeight, styleFlags)))
 {
 }
 
 Font::Font (const String& typefaceName, float fontHeight, int styleFlags)
-    : font (new SharedFontInternal (legacyArgs (typefaceName, fontHeight, styleFlags)))
+    : font (new SharedFontInternal (FontOptions (typefaceName, fontHeight, styleFlags)))
 {
 }
 
 Font::Font (const String& typefaceName, const String& typefaceStyle, float fontHeight)
-    : font (new SharedFontInternal (legacyArgs (typefaceName, typefaceStyle, fontHeight)))
+    : font (new SharedFontInternal (FontOptions (typefaceName, typefaceStyle, fontHeight)))
 {
 }
 
