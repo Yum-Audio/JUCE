@@ -63,7 +63,7 @@ public:
         clearSingletonInstance();
     }
 
-    JUCE_DECLARE_SINGLETON (TypefaceCache, false)
+    JUCE_DECLARE_SINGLETON_INLINE (TypefaceCache, false)
 
     void setSize (const int numToCache)
     {
@@ -105,6 +105,15 @@ public:
 
         const ScopedWriteLock slw (lock);
 
+        auto newFace = CachedFace { key,
+                                    ++counter,
+                                    juce_getTypefaceForFont != nullptr
+                                        ? juce_getTypefaceForFont (font)
+                                        : Font::getDefaultTypefaceForFont (font) };
+
+        if (newFace.typeface == nullptr)
+            return nullptr;
+
         const auto replaceIter = std::min_element (faces.begin(),
                                                    faces.end(),
                                                    [] (const auto& a, const auto& b)
@@ -114,13 +123,8 @@ public:
 
         jassert (replaceIter != faces.end());
         auto& face = *replaceIter;
-        face = CachedFace { key,
-                            ++counter,
-                            juce_getTypefaceForFont != nullptr
-                                ? juce_getTypefaceForFont (font)
-                                : Font::getDefaultTypefaceForFont (font) };
 
-        jassert (face.typeface != nullptr); // the look and feel must return a typeface!
+        face = std::move (newFace);
 
         if (defaultFace == nullptr && key == Key{})
             defaultFace = face.typeface;
@@ -170,8 +174,6 @@ private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (TypefaceCache)
 };
 
-JUCE_IMPLEMENT_SINGLETON (TypefaceCache)
-
 void Typeface::setTypefaceCacheSize (int numFontsToCache)
 {
     TypefaceCache::getInstance()->setSize (numFontsToCache);
@@ -208,10 +210,7 @@ public:
         const ScopedLock lock (mutex);
 
         if (typeface == nullptr)
-        {
             typeface = options.getTypeface() != nullptr ? options.getTypeface() : TypefaceCache::getInstance()->findTypefaceFor (f);
-            jassert (typeface != nullptr);
-        }
 
         return typeface;
     }
@@ -756,11 +755,9 @@ float Font::getDescentInPoints() const      { return getDescent() * getHeightToP
 
 int Font::getStringWidth (const String& text) const
 {
-    JUCE_BEGIN_IGNORE_WARNINGS_MSVC (4996)
-    JUCE_BEGIN_IGNORE_WARNINGS_GCC_LIKE ("-Wdeprecated-declarations")
+    JUCE_BEGIN_IGNORE_DEPRECATION_WARNINGS
     return (int) std::ceil (getStringWidthFloat (text));
-    JUCE_END_IGNORE_WARNINGS_GCC_LIKE
-    JUCE_END_IGNORE_WARNINGS_MSVC
+    JUCE_END_IGNORE_DEPRECATION_WARNINGS
 }
 
 float Font::getStringWidthFloat (const String& text) const
@@ -839,9 +836,19 @@ Font Font::findSuitableFontForText (const String& text, const String& language) 
             return copy;
     }
 
-    if (auto current = getTypefacePtr())
+    const auto fallbackTypefacePtr = std::invoke ([&]
     {
-        if (auto suggested = current->createSystemFallback (text, language))
+        if (auto current = getTypefacePtr())
+            return current;
+
+        auto copy = *this;
+        copy.setTypefaceName (Font::getDefaultSansSerifFontName());
+        return copy.getTypefacePtr();
+    });
+
+    if (fallbackTypefacePtr != nullptr)
+    {
+        if (auto suggested = fallbackTypefacePtr->createSystemFallback (text, language))
         {
             auto copy = *this;
 
@@ -943,11 +950,9 @@ public:
 
         beginTest ("Old constructor from Typeface");
         {
-            JUCE_BEGIN_IGNORE_WARNINGS_GCC_LIKE ("-Wdeprecated-declarations")
-            JUCE_BEGIN_IGNORE_WARNINGS_MSVC (4996)
+            JUCE_BEGIN_IGNORE_DEPRECATION_WARNINGS
             Font f { face };
-            JUCE_END_IGNORE_WARNINGS_MSVC
-            JUCE_END_IGNORE_WARNINGS_GCC_LIKE
+            JUCE_END_IGNORE_DEPRECATION_WARNINGS
 
             expect (f.getTypefaceName() == face->getName());
             expect (f.getTypefaceStyle() == face->getStyle());
