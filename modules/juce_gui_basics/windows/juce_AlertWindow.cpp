@@ -53,8 +53,9 @@ static int showAlertWindowUnmanaged (const MessageBoxOptions& opts, ModalCompone
 AlertWindow::AlertWindow (const String& title,
                           const String& message,
                           MessageBoxIconType iconType,
-                          Component* comp)
-   : TopLevelWindow (title, true),
+                          Component* comp,
+                          bool shouldAddToDesktop)
+   : TopLevelWindow (title, shouldAddToDesktop),
      alertIconType (iconType),
      associatedComponent (comp),
      desktopScale (comp != nullptr ? Component::getApproximateScaleFactorForComponent (comp) : 1.0f)

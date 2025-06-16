@@ -234,10 +234,16 @@ void FileChooserDialogBox::createNewFolder()
 
     if (parent.isDirectory())
     {
+        const auto hasParentComponent = getParentComponent () != nullptr;
+        const auto addToDesktop = ! hasParentComponent;
+        
         auto* aw = new AlertWindow (TRANS ("New Folder"),
                                     TRANS ("Please enter the name for the folder"),
-                                    MessageBoxIconType::NoIcon, this);
+                                    MessageBoxIconType::NoIcon, this, addToDesktop);
 
+        if (auto parent = getParentComponent ())
+            parent->addAndMakeVisible (aw);
+        
         aw->addTextEditor ("Folder Name", String(), String(), false);
         aw->addButton (TRANS ("Create Folder"), 1, KeyPress (KeyPress::returnKey));
         aw->addButton (TRANS ("Cancel"),        0, KeyPress (KeyPress::escapeKey));

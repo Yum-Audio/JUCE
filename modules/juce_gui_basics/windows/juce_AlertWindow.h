@@ -67,7 +67,8 @@ public:
     AlertWindow (const String& title,
                  const String& message,
                  MessageBoxIconType iconType,
-                 Component* associatedComponent = nullptr);
+                 Component* associatedComponent = nullptr,
+                 bool shouldAddToDesktop = true);
 
     /** Destroys the AlertWindow */
     ~AlertWindow() override;
