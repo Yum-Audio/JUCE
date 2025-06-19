@@ -252,6 +252,13 @@ public:
         return channels[channel] + startSample;
     }
 
+    /** Returns an array of raw pointer to the channels in this block. */
+    SampleType* const* getChannelPointers () const noexcept
+    {
+        jassert (channels != nullptr);
+        return channels;
+    }
+
     /** Returns an AudioBlock that represents one of the channels in this block. */
     AudioBlock getSingleChannelBlock (size_t channel) const noexcept
     {
