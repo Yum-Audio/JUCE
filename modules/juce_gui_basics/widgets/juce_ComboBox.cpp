@@ -523,6 +523,8 @@ static void comboBoxPopupMenuFinishedCallback (int result, ComboBox* combo)
 
         if (result != 0)
             combo->setSelectedId (result);
+        else if (combo->onPopupDismissed)
+            combo->onPopupDismissed();
     }
 }
 
@@ -555,6 +557,9 @@ void ComboBox::showPopup()
     menu.setLookAndFeel (&lf);
     menu.showMenuAsync (lf.getOptionsForComboBoxPopupMenu (*this, *label),
                         ModalCallbackFunction::forComponent (comboBoxPopupMenuFinishedCallback, this));
+
+    if (onPopupShown)
+        onPopupShown();
 }
 
 //==============================================================================
