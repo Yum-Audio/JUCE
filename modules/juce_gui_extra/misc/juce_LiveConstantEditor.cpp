@@ -210,8 +210,8 @@ void LivePropertyEditorBase::findOriginalValueInCode()
 
     if (p.isEmpty())
     {
-        // Not sure how this would happen - some kind of mix-up between source code and line numbers..
-//        jassertfalse;
+        // Not sure how this would happen - some kind of mix-up between source code and line numbers.
+        jassertfalse;
         return;
     }
 

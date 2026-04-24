@@ -36,6 +36,7 @@ profile
 **/LinuxMakefile/build
 **/VisualStudio[0-9]*/Win32
 **/VisualStudio[0-9]*/x64
+**/VisualStudio[0-9]*/packages
 **/Builds/x64
 **/.vs
 **/CodeBlocks/bin
@@ -55,7 +56,7 @@ profile
 **/Builds/MacOSX/**/Index
 **/Builds/MacOSX/**/Intermediates.noindex
 **/doxygen/doc
-**/doxygen/build
+**/doxygen/xml
 **/.idea
 extras/Projucer/JUCECompileEngine.dylib
 extras/Projucer/cmakebuild/**
