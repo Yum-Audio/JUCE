@@ -575,7 +575,14 @@ struct CoreMidiHelpers
             {
                 {
                     const std::scoped_lock lock { mutex };
-                    updateQueue.push_back (removed);
+
+                    pendingUpdate.needsEndpointUpdate = true;
+
+                    if (removed.has_value()
+                        && std::find (pendingUpdate.removedEndpoints.begin(), pendingUpdate.removedEndpoints.end(), *removed) == pendingUpdate.removedEndpoints.end())
+                    {
+                        pendingUpdate.removedEndpoints.push_back (*removed);
+                    }
                 }
 
                 triggerMainThreadUpdate();
@@ -600,28 +607,34 @@ struct CoreMidiHelpers
 
             void handleAsyncUpdate() override
             {
-                const auto [listenersCopy, updatesCopy] = std::invoke ([&]
+                const auto [listenersCopy, update] = std::invoke ([&]
                 {
                     const std::scoped_lock lock { mutex };
-                    const ScopeGuard scope { [this] { updateQueue.clear(); } };
-                    return std::tuple (listeners, updateQueue);
+                    const ScopeGuard scope { [this] { pendingUpdate = {}; } };
+                    return std::tuple (listeners, pendingUpdate);
                 });
 
-                for (const auto& u : updatesCopy)
+                if (update.needsEndpointUpdate)
+                {
                     for (const auto& l : listenersCopy)
                         if (const auto locked = l.lock())
-                            locked->notify (u);
+                            locked->notify (update.removedEndpoints);
+                }
 
                 const std::scoped_lock lock { mutex };
                 listeners.erase (std::remove_if (listeners.begin(), listeners.end(), [] (auto& l) { return ! l.lock(); }),
                                  listeners.end());
             }
 
+            struct PendingUpdate
+            {
+                std::vector<MIDIEndpointRef> removedEndpoints;
+                bool needsEndpointUpdate = false;
+            };
+
             std::mutex mutex;
             std::vector<std::weak_ptr<SharedEndpointsImplNative>> listeners;
-
-            // Queue of update messages to send, nullopt indicates that the event was not a removal
-            std::vector<std::optional<MIDIEndpointRef>> updateQueue;
+            PendingUpdate pendingUpdate;
         };
 
         SharedEndpointsImplNative (MIDIClientRef c, ump::EndpointsListener& l)
@@ -1183,15 +1196,26 @@ struct CoreMidiHelpers
 
         void notify (std::optional<MIDIEndpointRef> removedEndpoint)
         {
+            if (removedEndpoint.has_value())
+            {
+                notify (std::vector<MIDIEndpointRef> { *removedEndpoint });
+                return;
+            }
+
+            notify (std::vector<MIDIEndpointRef> {});
+        }
+
+        void notify (const std::vector<MIDIEndpointRef>& removedEndpoints)
+        {
             JUCE_ASSERT_MESSAGE_THREAD;
 
             endpoints = Endpoints{};
 
-            if (removedEndpoint.has_value())
+            for (const auto removedEndpoint : removedEndpoints)
             {
                 endpointRemovalListeners.call ([&] (auto& c)
                 {
-                    c.endpointRemoved (*removedEndpoint);
+                    c.endpointRemoved (removedEndpoint);
                 });
             }
 
